@@ -1,0 +1,19 @@
+/** Central registry of TanStack Query keys — keeps cache invalidation consistent. */
+export const QueryKeys = {
+  products: ['products'] as const,
+  product: (id: string) => ['products', id] as const,
+  productsByIds: (ids: string[]) => ['products', 'by-ids', ids.join(',')] as const,
+  featuredProducts: ['products', 'featured'] as const,
+  newArrivals: ['products', 'new-arrivals'] as const,
+  bestSellers: ['products', 'best-sellers'] as const,
+  signature: ['products', 'signature'] as const,
+  seasonal: ['products', 'seasonal'] as const,
+  productsByCategory: (categoryId: string) =>
+    ['products', 'by-category', categoryId] as const,
+  search: (query: string) => ['products', 'search', query] as const,
+  productReviews: (id: string) => ['products', id, 'reviews'] as const,
+  categories: ['categories'] as const,
+  collections: ['collections'] as const,
+  orders: ['orders'] as const,
+  notifications: ['notifications'] as const,
+};
