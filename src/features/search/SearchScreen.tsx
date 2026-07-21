@@ -29,7 +29,8 @@ export function SearchScreen() {
   const { width, gridColumns } = useResponsive();
   const [query, setQuery] = useState('');
   const debounced = useDebounce(query, 350);
-  const { data, isLoading, isFetching } = useSearchProducts(debounced);
+  const { data, isLoading, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useSearchProducts(debounced);
   const recent = useSearchStore((s) => s.recent);
   const addRecent = useSearchStore((s) => s.addRecent);
   const clearRecent = useSearchStore((s) => s.clearRecent);
@@ -107,6 +108,10 @@ export function SearchScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: PAD, paddingTop: Spacing.lg, paddingBottom: Spacing.giant }}
+          onEndReachedThreshold={0.4}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          }}
           ListEmptyComponent={
             isLoading || isFetching ? (
               <View style={styles.skeletonGrid}>

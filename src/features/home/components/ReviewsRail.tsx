@@ -1,5 +1,7 @@
 /**
  * ReviewsRail — horizontally scrolling customer testimonials.
+ * ponytail: decorative testimonial rail, no backend equivalent (backend only exposes
+ * reviews per-product, not a cross-product "recent reviews" feed) — stays mock-sourced.
  */
 import { FlashList } from '@shopify/flash-list';
 import { View } from 'react-native';
