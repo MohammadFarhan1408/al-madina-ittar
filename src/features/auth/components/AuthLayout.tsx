@@ -4,11 +4,11 @@
  */
 import { X } from 'lucide-react-native';
 import { type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
-import { ArtDecoDivider, GradientBackdrop, LogoMark } from '@/components/brand';
+import { ArtDecoDivider, GradientBackdrop } from '@/components/brand';
 import { Text } from '@/components/ui';
 import { HitSlop, IconSize, Layout, Spacing } from '@/constants';
 import { Palette } from '@/constants/colors';
@@ -49,7 +49,11 @@ export function AuthLayout({
           </Pressable>
 
           <View style={styles.header}>
-            <LogoMark size={56} color={Palette.champagne} />
+            <Image
+              source={require('@/assets/images/logo-mark.png')}
+              style={{ width: 56, height: 84 }}
+              resizeMode="contain"
+            />
             <Text variant="display" colorValue={Palette.ivory} align="center" style={styles.title}>
               {title}
             </Text>

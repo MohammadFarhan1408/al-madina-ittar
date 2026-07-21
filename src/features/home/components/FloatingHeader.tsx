@@ -3,13 +3,12 @@
  * giving persistent access to brand, search and cart once the hero scrolls away.
  */
 import { Heart, Search, ShoppingBag } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useHeaderReveal } from '@/animations';
-import { LogoMark } from '@/components/brand';
 import { GlassSurface, IconButton, Text } from '@/components/ui';
 import { IconSize, Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
@@ -28,7 +27,11 @@ export function FloatingHeader({ scrollY }: { scrollY: SharedValue<number> }) {
       <GlassSurface radius={0} intensity={70} bordered={false} style={[styles.bar, { paddingTop: insets.top + Spacing.sm }]}>
         <View style={[styles.inner, { borderBottomColor: colors.divider }]}>
           <View style={styles.brand}>
-            <LogoMark size={26} />
+            <Image
+              source={require('@/assets/images/logo-mark.png')}
+              style={{ width: 26, height: 39 }}
+              resizeMode="contain"
+            />
             <Text variant="subtitle" style={styles.wordmark}>
               AL MADINA
             </Text>
