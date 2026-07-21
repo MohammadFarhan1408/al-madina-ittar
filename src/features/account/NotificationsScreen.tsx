@@ -1,9 +1,8 @@
 /**
- * NotificationsScreen — list of notifications with a "mark all read" action. Read state
- * is tracked locally for the session.
+ * NotificationsScreen — list of notifications with a "mark all read" action, backed by
+ * the real read/read-all endpoints (optimistic via mutation + invalidation).
  */
 import { BellOff } from 'lucide-react-native';
-import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { NotificationItem } from '@/components/commerce';
@@ -11,21 +10,20 @@ import { StackHeader } from '@/components/layout';
 import { Divider, EmptyState, Loader, Text } from '@/components/ui';
 import { HitSlop, IconSize, Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
-import { useNotifications } from '@/hooks/queries';
+import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from '@/hooks/queries';
 import type { AppNotification } from '@/types';
 
 export function NotificationsScreen() {
   const { colors } = useTheme();
   const { data, isLoading } = useNotifications();
-  const [readIds, setReadIds] = useState<string[]>([]);
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
 
-  const items: AppNotification[] = (data ?? []).map((n) => ({
-    ...n,
-    read: n.read || readIds.includes(n.id),
-  }));
+  const items = data?.items ?? [];
 
-  const markAll = () => setReadIds((data ?? []).map((n) => n.id));
-  const markOne = (n: AppNotification) => setReadIds((ids) => (ids.includes(n.id) ? ids : [...ids, n.id]));
+  const markOne = (n: AppNotification) => {
+    if (!n.read) markRead.mutate(n.id);
+  };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -34,7 +32,7 @@ export function NotificationsScreen() {
         title="Notifications"
         right={
           items.length > 0 ? (
-            <Pressable hitSlop={HitSlop} onPress={markAll}>
+            <Pressable hitSlop={HitSlop} onPress={() => markAllRead.mutate()}>
               <Text variant="label" color="accent" uppercase>
                 Read all
               </Text>
