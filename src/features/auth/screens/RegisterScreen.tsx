@@ -10,6 +10,8 @@ import { useRouter } from 'expo-router';
 import { Button, FormField, Text } from '@/components/ui';
 import { IconSize, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
+import { syncGuestDataOnLogin } from '@/services/session-sync';
+import type { ApiError } from '@/types';
 import { toast, useSessionStore } from '@/store';
 import { haptics, zodResolver } from '@/utils';
 import { registerSchema, type RegisterValues } from '../schemas';
@@ -25,12 +27,17 @@ export function RegisterScreen() {
     defaultValues: { fullName: '', email: '', password: '' },
   });
 
-  const onSubmit = (values: RegisterValues) => {
-    haptics.success();
-    signUp(values.fullName, values.email);
-    toast.success('Welcome to Al Madina');
-    if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)');
+  const onSubmit = async (values: RegisterValues) => {
+    try {
+      await signUp(values.fullName, values.email, values.password);
+      await syncGuestDataOnLogin().catch(() => undefined);
+      haptics.success();
+      toast.success('Welcome to Al Madina');
+      if (router.canGoBack()) router.back();
+      else router.replace('/(tabs)');
+    } catch (err) {
+      toast.error((err as ApiError).message ?? 'Registration failed. Please try again.');
+    }
   };
 
   return (

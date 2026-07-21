@@ -10,6 +10,8 @@ import { useRouter } from 'expo-router';
 import { Button, FormField, Text } from '@/components/ui';
 import { IconSize, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
+import { syncGuestDataOnLogin } from '@/services/session-sync';
+import type { ApiError } from '@/types';
 import { toast, useSessionStore } from '@/store';
 import { haptics, zodResolver } from '@/utils';
 import { loginSchema, type LoginValues } from '../schemas';
@@ -25,12 +27,17 @@ export function LoginScreen() {
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = (values: LoginValues) => {
-    haptics.success();
-    signIn(values.email);
-    toast.success('Welcome back to the Maison');
-    if (router.canGoBack()) router.back();
-    else router.replace('/(tabs)');
+  const onSubmit = async (values: LoginValues) => {
+    try {
+      await signIn(values.email, values.password);
+      await syncGuestDataOnLogin().catch(() => undefined);
+      haptics.success();
+      toast.success('Welcome back to the Maison');
+      if (router.canGoBack()) router.back();
+      else router.replace('/(tabs)');
+    } catch (err) {
+      toast.error((err as ApiError).message ?? 'Sign in failed. Please try again.');
+    }
   };
 
   return (
@@ -53,6 +60,15 @@ export function LoginScreen() {
         secureTextEntry
         leftIcon={<Lock size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
       />
+
+      <Text
+        variant="body"
+        color="accent"
+        align="right"
+        onPress={() => router.push('/(auth)/forgot-password')}
+      >
+        Forgot password?
+      </Text>
 
       <Button
         label="Sign In"
