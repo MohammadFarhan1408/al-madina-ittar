@@ -20,6 +20,7 @@ import { Avatar, Button, Card, Divider, MenuRow, Text } from "@/components/ui";
 import { IconSize, Layout, Spacing } from "@/constants";
 import { Palette } from "@/constants/colors";
 import { useTheme } from "@/core/theme";
+import { useOrders } from "@/hooks/queries";
 import {
   selectCartCount,
   selectWishlistCount,
@@ -35,6 +36,8 @@ export function ProfileScreen() {
   const { user, isAuthenticated, signOut } = useSessionStore();
   const wishlistCount = useWishlistStore(selectWishlistCount);
   const cartCount = useCartStore(selectCartCount);
+  const { data: ordersPage } = useOrders();
+  const ordersCount = ordersPage?.total ?? 0;
 
   const icon = (Ic: typeof Package) => (
     <Ic size={IconSize.sm} color={colors.accent} strokeWidth={1.75} />
@@ -90,7 +93,7 @@ export function ProfileScreen() {
         {/* Stats */}
         <Card variant="glass">
           <View style={styles.stats}>
-            <Stat label="Orders" value="2" />
+            <Stat label="Orders" value={String(ordersCount)} />
             <Divider vertical />
             <Stat label="Wishlist" value={String(wishlistCount)} />
             <Divider vertical />
