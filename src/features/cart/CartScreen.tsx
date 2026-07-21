@@ -59,6 +59,9 @@ export function CartScreen() {
       <GlassSurface radius={0} intensity={70} bordered={false} style={[styles.footer, { paddingBottom: insets.bottom + Layout.tabBarClearance - Spacing.xl }]}>
         <View style={[styles.footerInner, { borderTopColor: colors.divider }]}>
           <OrderSummary summary={summary} />
+          <Text variant="caption" color="muted" align="center">
+            Express delivery, if selected, is added at checkout.
+          </Text>
           <Button label="Proceed to Checkout" variant="gradient" glow onPress={() => router.push('/checkout')} />
         </View>
       </GlassSurface>
