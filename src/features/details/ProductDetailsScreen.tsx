@@ -29,9 +29,10 @@ import { Palette } from '@/constants/colors';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
 import { useProduct, useProductReviews, useProductsByCategory } from '@/hooks/queries';
-import { toast, useCartStore } from '@/store';
+import { toast, useCartStore, useSessionStore } from '@/store';
 import { formatVolume, haptics } from '@/utils';
 import { ImageGallery } from './components/ImageGallery';
+import { WriteReviewSheet } from './components/WriteReviewSheet';
 
 const SIZES = [30, 50, 75, 100];
 
@@ -42,12 +43,24 @@ export function ProductDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data: product, isLoading } = useProduct(id ?? '');
-  const { data: reviews } = useProductReviews(id ?? '');
+  const { data: reviewsPage } = useProductReviews(id ?? '');
+  const reviews = reviewsPage?.items;
   const related = useProductsByCategory(product?.categoryId ?? '');
   const addItem = useCartStore((s) => s.addItem);
+  const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
 
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState<number | null>(null);
+  const [reviewSheetOpen, setReviewSheetOpen] = useState(false);
+
+  const openReviewSheet = () => {
+    if (!isAuthenticated) {
+      toast.error('Sign in to write a review');
+      router.push('/(auth)/login');
+      return;
+    }
+    setReviewSheetOpen(true);
+  };
 
   if (isLoading || !product) {
     return (
@@ -135,14 +148,13 @@ export function ProductDetailsScreen() {
             {product.description}
           </Text>
 
-          {reviews && reviews.length > 0 ? (
-            <View style={styles.reviews}>
-              <ArtDecoDivider label="REVIEWS" />
-              {reviews.slice(0, 2).map((review) => (
-                <ReviewCard key={review.id} review={review} />
-              ))}
-            </View>
-          ) : null}
+          <View style={styles.reviews}>
+            <ArtDecoDivider label="REVIEWS" />
+            {reviews?.slice(0, 2).map((review) => (
+              <ReviewCard key={review.id} review={review} />
+            ))}
+            <Button label="Write a Review" variant="outline" size="sm" onPress={openReviewSheet} />
+          </View>
 
           {relatedProducts.length > 0 ? (
             <View style={styles.related}>
@@ -180,6 +192,12 @@ export function ProductDetailsScreen() {
           />
         </View>
       </GlassSurface>
+
+      <WriteReviewSheet
+        productId={product.id}
+        visible={reviewSheetOpen}
+        onClose={() => setReviewSheetOpen(false)}
+      />
     </View>
   );
 }

@@ -17,6 +17,7 @@ import { IconSize, Layout, Spacing } from '@/constants';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
 import { useProducts, useProductsByCategory, useSearchProducts } from '@/hooks/queries';
+import type { ProductListParams } from '@/services';
 import type { Product, ScentFamily } from '@/types';
 
 const GAP = Spacing.lg;
@@ -37,16 +38,27 @@ export function ProductListingScreen() {
   const { width, gridColumns } = useResponsive();
   const params = useLocalSearchParams<{ categoryId?: string; query?: string }>();
 
-  const byCategory = useProductsByCategory(params.categoryId ?? '');
-  const search = useSearchProducts(params.query ?? '');
-  const all = useProducts();
-
-  const source = params.categoryId ? byCategory : params.query ? search : all;
-  const { data, isLoading } = source;
-
   const [family, setFamily] = useState<ScentFamily | null>(null);
   const [sort, setSort] = useState<SortKey>('featured');
   const [sortOpen, setSortOpen] = useState(false);
+
+  const SORT_MAP: Record<SortKey, ProductListParams['sort']> = {
+    featured: 'featured',
+    priceAsc: 'price_asc',
+    priceDesc: 'price_desc',
+    rating: 'rating',
+  };
+  const serverParams: ProductListParams = { family: family ?? undefined, sort: SORT_MAP[sort] };
+
+  // `/categories/:id/products` only supports page/limit server-side (no family/sort
+  // filters), so that path still needs the client-side pass below; for `all`/`search`
+  // (which do support these filters) it's a harmless no-op re-application.
+  const byCategory = useProductsByCategory(params.categoryId ?? '');
+  const search = useSearchProducts(params.query ?? '', serverParams);
+  const all = useProducts(serverParams);
+
+  const source = params.categoryId ? byCategory : params.query ? search : all;
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = source;
 
   const products = useMemo(() => {
     let list = [...(data ?? [])];
@@ -90,6 +102,17 @@ export function ProductListingScreen() {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: Spacing.giant }}
+        onEndReachedThreshold={0.4}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={styles.skeletonGrid}>
+              <ProductCardSkeleton width={cardWidth} />
+            </View>
+          ) : null
+        }
         ListHeaderComponent={
           <View style={styles.filters}>
             <FlashListChips active={family} onToggle={setFamily} />
