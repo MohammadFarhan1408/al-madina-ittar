@@ -18,6 +18,7 @@ import { useOrders } from '@/hooks/queries';
 export function OrdersScreen() {
   const { colors } = useTheme();
   const { data, isLoading } = useOrders();
+  const orders = data?.items ?? [];
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -28,7 +29,7 @@ export function OrdersScreen() {
         </View>
       ) : (
         <FlashList
-          data={data}
+          data={orders}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: Layout.screenPadding, paddingBottom: Spacing.giant }}
@@ -44,7 +45,7 @@ export function OrdersScreen() {
           }
           renderItem={({ item, index }) => (
             <Animated.View entering={enter.staggered(index)}>
-              <OrderCard order={item} />
+              <OrderCard order={item} onPress={(order) => router.push(`/orders/${order.id}`)} />
             </Animated.View>
           )}
         />

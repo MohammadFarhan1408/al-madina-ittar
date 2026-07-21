@@ -31,10 +31,10 @@ export function OrderCard({ order, onPress }: { order: Order; onPress?: (order: 
       </View>
 
       <View style={styles.thumbs}>
-        {thumbs.map((item) => (
+        {thumbs.map((item, index) => (
           <Image
-            key={item.product.id}
-            source={{ uri: item.product.images[0] }}
+            key={`${item.productId}-${index}`}
+            source={{ uri: item.productImage }}
             style={styles.thumb}
             contentFit="cover"
             transition={200}
@@ -42,9 +42,9 @@ export function OrderCard({ order, onPress }: { order: Order; onPress?: (order: 
         ))}
         <View style={styles.meta}>
           <Text variant="caption" color="secondary">
-            {order.summary.itemCount} item{order.summary.itemCount > 1 ? 's' : ''}
+            {order.items.length} item{order.items.length > 1 ? 's' : ''}
           </Text>
-          <Price amount={order.summary.total} currency={order.summary.currency} variant="price" showDiscount={false} />
+          <Price amount={order.total} currency={order.currency} variant="price" showDiscount={false} />
         </View>
       </View>
     </Card>
