@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { collectionsService, notificationsService, ordersService } from '@/services';
+import { collectionsService } from '@/services';
 import { QueryKeys } from './query-keys';
 
 export const useCollections = () =>
@@ -8,18 +8,4 @@ export const useCollections = () =>
     queryKey: QueryKeys.collections,
     queryFn: () => collectionsService.getAll(),
     staleTime: 1000 * 60 * 10,
-  });
-
-export const useOrders = () =>
-  useQuery({
-    queryKey: QueryKeys.orders,
-    queryFn: () => ordersService.getAll(),
-    staleTime: 1000 * 60,
-  });
-
-export const useNotifications = () =>
-  useQuery({
-    queryKey: QueryKeys.notifications,
-    queryFn: () => notificationsService.getAll(),
-    staleTime: 1000 * 60,
   });

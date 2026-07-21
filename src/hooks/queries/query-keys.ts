@@ -1,5 +1,10 @@
 /** Central registry of TanStack Query keys — keeps cache invalidation consistent. */
 export const QueryKeys = {
+  auth: ['auth', 'me'] as const,
+  wishlist: ['wishlist'] as const,
+  cart: ['cart'] as const,
+  addresses: ['addresses'] as const,
+  order: (id: string) => ['orders', id] as const,
   products: ['products'] as const,
   product: (id: string) => ['products', id] as const,
   productsByIds: (ids: string[]) => ['products', 'by-ids', ids.join(',')] as const,
@@ -15,5 +20,6 @@ export const QueryKeys = {
   categories: ['categories'] as const,
   collections: ['collections'] as const,
   orders: ['orders'] as const,
+  orderPayments: (orderId: string) => ['orders', orderId, 'payments'] as const,
   notifications: ['notifications'] as const,
 };

@@ -1,16 +1,35 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
-import { productsService } from '@/services';
+import { productsService, type CreateReviewInput, type ProductListParams } from '@/services';
 import { QueryKeys } from './query-keys';
 
 const FIVE_MIN = 1000 * 60 * 5;
+const PAGE_SIZE = 20;
 
-export const useProducts = () =>
-  useQuery({
-    queryKey: QueryKeys.products,
-    queryFn: () => productsService.getAll(),
+/** Flattens `useInfiniteQuery`'s pages into a single array for FlashList consumption. */
+function useFlatInfiniteProducts(
+  queryKey: readonly unknown[],
+  fetchPage: (page: number) => ReturnType<typeof productsService.getAll>,
+  enabled = true,
+) {
+  const query = useInfiniteQuery({
+    queryKey,
+    queryFn: ({ pageParam }) => fetchPage(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled,
     staleTime: FIVE_MIN,
   });
+  const data = useMemo(() => query.data?.pages.flatMap((p) => p.items) ?? [], [query.data]);
+  return { ...query, data };
+}
+
+export const useProducts = (params?: ProductListParams) =>
+  useFlatInfiniteProducts(
+    [...QueryKeys.products, params] as const,
+    (page) => productsService.getAll({ ...params, page, limit: PAGE_SIZE }),
+  );
 
 export const useFeaturedProducts = () =>
   useQuery({
@@ -63,13 +82,23 @@ export const useProductReviews = (productId: string) =>
     staleTime: FIVE_MIN,
   });
 
-export const useSearchProducts = (query: string) =>
-  useQuery({
-    queryKey: QueryKeys.search(query),
-    queryFn: () => productsService.search(query),
-    enabled: query.trim().length > 0,
-    staleTime: 1000 * 30,
+export const useCreateReview = (productId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateReviewInput) => productsService.createReview(productId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QueryKeys.productReviews(productId) });
+      queryClient.invalidateQueries({ queryKey: QueryKeys.product(productId) });
+    },
   });
+};
+
+export const useSearchProducts = (query: string, params?: ProductListParams) =>
+  useFlatInfiniteProducts(
+    [...QueryKeys.search(query), params] as const,
+    (page) => productsService.search(query, { ...params, page, limit: PAGE_SIZE }),
+    query.trim().length > 0,
+  );
 
 export const useProduct = (id: string) =>
   useQuery({
@@ -79,10 +108,9 @@ export const useProduct = (id: string) =>
     staleTime: FIVE_MIN,
   });
 
-export const useProductsByCategory = (categoryId: string) =>
-  useQuery({
-    queryKey: QueryKeys.productsByCategory(categoryId),
-    queryFn: () => productsService.getByCategory(categoryId),
-    enabled: Boolean(categoryId),
-    staleTime: FIVE_MIN,
-  });
+export const useProductsByCategory = (categoryId: string, params?: ProductListParams) =>
+  useFlatInfiniteProducts(
+    [...QueryKeys.productsByCategory(categoryId), params] as const,
+    (page) => productsService.getByCategory(categoryId, { ...params, page, limit: PAGE_SIZE }),
+    Boolean(categoryId),
+  );
