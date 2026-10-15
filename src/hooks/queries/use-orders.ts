@@ -16,10 +16,17 @@ export const useOrders = (page = 1, limit = 20) => {
   });
 };
 
-export const useOrder = (id: string, initialData?: Order) =>
+const POLL_MS = 2000;
+const POLL_CAP_MS = 2 * 60 * 1000;
+
+/** True while a card/wallet payment is settling and recent enough to be worth polling. */
+export const isSettling = (order?: Order) =>
+  order?.paymentStatus === 'processing' && Date.now() - new Date(order.placedAt).getTime() < POLL_CAP_MS;
+
+export const useOrder = (id: string, initialData?: Order, guestEmail?: string) =>
   useQuery({
     queryKey: QueryKeys.order(id),
-    queryFn: () => ordersService.getById(id),
+    queryFn: () => ordersService.getById(id, guestEmail),
     initialData,
     enabled: Boolean(id),
     staleTime: 1000 * 60,
@@ -28,7 +35,9 @@ export const useOrder = (id: string, initialData?: Order) =>
     refetchOnMount: 'always',
     // While a card/wallet payment is still settling, poll briefly instead of
     // making the customer manually refresh to see it land.
-    refetchInterval: (query) => (query.state.data?.paymentStatus === 'processing' ? 2000 : false),
+    // Capped at 2 minutes from placement (the web does the same); callers show
+    // "still confirming" copy after that.
+    refetchInterval: (query) => (isSettling(query.state.data) ? POLL_MS : false),
   });
 
 export const usePlaceOrder = () => {

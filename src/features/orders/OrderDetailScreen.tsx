@@ -55,7 +55,7 @@ export function OrderDetailScreen() {
             <Text variant="bodyStrong">Payment</Text>
             <Badge label={order.paymentStatus} tone={PAYMENT_TONE[order.paymentStatus]} />
           </View>
-          {order.paymentStatus === 'failed' ? (
+          {order.paymentStatus === 'failed' || order.paymentStatus === 'cancelled' ? (
             <Button
               label="Retry Payment"
               variant="outline"

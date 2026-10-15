@@ -5,6 +5,7 @@
  * success screen (polls payment status, offers retry on failure).
  */
 import { CreditCard, MapPin, Plus, Truck, Wallet, Zap } from 'lucide-react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -18,11 +19,12 @@ import { IconSize, Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { AppConfig } from '@/core/config';
 import { addressesService } from '@/services';
+import { openStripeCheckoutForOrder } from '@/services/payments/checkout-browser';
 import { toast, useCartStore, useCartSummary, useSessionStore } from '@/store';
-import { useAddresses, useAppliedCoupon, usePlaceOrder } from '@/hooks/queries';
+import { QueryKeys, useAddresses, useAppliedCoupon, usePlaceOrder } from '@/hooks/queries';
 import { haptics, uuid, zodResolver } from '@/utils';
 import type { Order } from '@/types';
-import { addressSchema, type AddressValues } from './schema';
+import { foldAddress, makeAddressSchema, type AddressValues } from './schema';
 import { CouponField } from '../cart/components/CouponField';
 import { OptionRow } from './components/OptionRow';
 import { OrderSuccess } from './components/OrderSuccess';
@@ -54,6 +56,8 @@ export function CheckoutScreen() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(true);
 
+  const queryClient = useQueryClient();
+  const addressSchema = useMemo(() => makeAddressSchema(!isAuthenticated), [isAuthenticated]);
   const { control, handleSubmit, getValues, reset } = useForm<AddressValues>({
     resolver: zodResolver(addressSchema),
     defaultValues: { fullName: user?.fullName ?? '', phone: '', address: '', city: '', email: '' },
@@ -77,7 +81,7 @@ export function CheckoutScreen() {
     if (!address) return;
     setSelectedAddressId(id);
     setShowAddressForm(false);
-    reset({ fullName: address.fullName, phone: address.phone, address: address.addressLine, city: address.city, email: '' });
+    reset({ fullName: address.fullName, phone: address.phone, address: foldAddress(address), city: address.city, email: '' });
   };
 
   const startNewAddress = () => {
@@ -100,7 +104,7 @@ export function CheckoutScreen() {
           },
           deliveryMethod: delivery,
           paymentMethod: payment,
-          guestEmail: isAuthenticated ? undefined : values.email || undefined,
+          guestEmail: isAuthenticated ? undefined : values.email.trim(),
           couponCode: coupon.valid ? (coupon.code ?? undefined) : undefined,
           idempotencyKey,
         },
@@ -123,6 +127,18 @@ export function CheckoutScreen() {
               .catch(() => undefined);
           }
           setPlacedOrder(order);
+          useCartStore.getState().clear();
+          // Card/wallet: the backend already created a Stripe Checkout session; open it
+          // over the confirmation screen, then refetch once the customer closes it.
+          if (payment !== 'cod') {
+            const guestEmail = isAuthenticated ? undefined : values.email.trim();
+            void openStripeCheckoutForOrder(order.id, guestEmail)
+              .catch(() => undefined)
+              .finally(() => {
+                queryClient.invalidateQueries({ queryKey: QueryKeys.order(order.id) });
+                queryClient.invalidateQueries({ queryKey: QueryKeys.orderPayments(order.id) });
+              });
+          }
         },
         onError: () => toast.error('We could not place your order. Please try again.'),
       },
@@ -130,7 +146,7 @@ export function CheckoutScreen() {
   };
 
   if (placedOrder) {
-    return <OrderSuccess order={placedOrder} />;
+    return <OrderSuccess order={placedOrder} guestEmail={isAuthenticated ? undefined : getValues('email').trim()} />;
   }
 
   const next = () => {

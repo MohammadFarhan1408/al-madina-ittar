@@ -13,7 +13,7 @@ import { ArtDecoDivider, FloatingMotif, GradientBackdrop } from '@/components/br
 import { Button, Text } from '@/components/ui';
 import { IconSize, Layout, Spacing } from '@/constants';
 import { Palette } from '@/constants/colors';
-import { useOrder, useRetryPayment } from '@/hooks/queries';
+import { isSettling, useOrder, useRetryPayment } from '@/hooks/queries';
 import { toast } from '@/store';
 import type { Order } from '@/types';
 import { uuid } from '@/utils';
@@ -35,16 +35,31 @@ const COPY: Record<string, { title: string; body: string }> = {
     title: 'Payment Failed',
     body: 'Your payment could not be completed. You can retry or contact us for help.',
   },
+  cancelled: {
+    title: 'Payment Cancelled',
+    body: 'Your payment was not completed. You can retry whenever you are ready.',
+  },
+  refunded: {
+    title: 'Order Refunded',
+    body: 'This order has been refunded. Contact us if you have any questions.',
+  },
 };
 
-export function OrderSuccess({ order: initialOrder }: { order: Order }) {
+const STILL_CONFIRMING = {
+  title: 'Still Confirming',
+  body: 'Your bank is taking a little longer than usual. This page updates as soon as the payment settles.',
+};
+
+export function OrderSuccess({ order: initialOrder, guestEmail }: { order: Order; guestEmail?: string }) {
   const insets = useSafeAreaInsets();
-  const { data: order } = useOrder(initialOrder.id, initialOrder);
-  const retryPayment = useRetryPayment(initialOrder.id);
+  const { data: order } = useOrder(initialOrder.id, initialOrder, guestEmail);
+  const retryPayment = useRetryPayment(initialOrder.id, guestEmail);
 
   const status = order?.paymentStatus ?? initialOrder.paymentStatus;
   const isFailure = status === 'failed' || status === 'cancelled';
-  const copy = COPY[status] ?? COPY.paid;
+  // Polling stops 2 minutes after placement; if it is still processing then, say so.
+  const stalled = status === 'processing' && !isSettling(order ?? initialOrder);
+  const copy = stalled ? STILL_CONFIRMING : (COPY[status] ?? COPY.paid);
 
   return (
     <View style={styles.root}>

@@ -9,12 +9,14 @@ export type TransactionStatus = 'pending' | 'processing' | 'succeeded' | 'failed
 
 export type Transaction = {
   id: ID;
-  provider: 'cod' | 'simulated';
+  provider: 'cod' | 'simulated' | 'stripe';
   status: TransactionStatus;
   amount: Money;
   currency: string;
   providerReference?: string;
   failureReason?: string;
+  /** Stripe only: `checkoutUrl` is the hosted Checkout Session to open. */
+  metadata?: { checkoutUrl?: string };
   createdAt: string;
 };
 

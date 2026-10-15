@@ -21,7 +21,8 @@ export type PlaceOrderInput = {
 
 export type OrdersService = {
   getAll(page?: number, limit?: number): Promise<Paginated<Order>>;
-  getById(id: string): Promise<Order>;
+  /** `guestEmail` lets a guest read the order they placed (`GET /orders/:id?email=`). */
+  getById(id: string, guestEmail?: string): Promise<Order>;
   place(input: PlaceOrderInput, cartItems: CartItem[]): Promise<Order>;
 };
 
@@ -96,8 +97,10 @@ const remoteService: OrdersService = {
     });
     return data.data;
   },
-  async getById(id) {
-    const { data } = await apiClient.get<ApiResponse<Order>>(Endpoints.order(id));
+  async getById(id, guestEmail) {
+    const { data } = await apiClient.get<ApiResponse<Order>>(Endpoints.order(id), {
+      params: { email: guestEmail },
+    });
     return data.data;
   },
   async place(input) {
