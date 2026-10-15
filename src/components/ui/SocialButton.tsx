@@ -19,6 +19,7 @@ export function SocialButton({ icon, label, onPress }: SocialButtonProps) {
   const { colors } = useTheme();
   return (
     <Pressable
+      accessibilityRole="button"
       onPress={() => {
         haptics.light();
         onPress?.();

@@ -63,7 +63,14 @@ export function WriteReviewSheet({
 
       <View style={styles.stars}>
         {[1, 2, 3, 4, 5].map((star) => (
-          <Pressable key={star} onPress={() => setRating(star)} hitSlop={8}>
+          <Pressable
+            key={star}
+            accessibilityRole="button"
+            accessibilityLabel={`${star} star${star === 1 ? '' : 's'}`}
+            accessibilityState={{ selected: star === rating }}
+            onPress={() => setRating(star)}
+            hitSlop={8}
+          >
             <Star
               size={IconSize.lg}
               color={colors.accent}

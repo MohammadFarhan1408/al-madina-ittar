@@ -21,7 +21,7 @@ export function CartLineItem({ item, onPress }: { item: CartItem; onPress?: () =
 
   return (
     <Animated.View entering={FadeIn} exiting={FadeOutRight} style={[styles.row, { borderColor: colors.divider }]}>
-      <Pressable onPress={onPress}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`View ${product.name}`} onPress={onPress}>
         <Image source={{ uri: product.images[0] }} style={styles.image} contentFit="cover" transition={200} />
       </Pressable>
       <View style={styles.body}>
@@ -40,6 +40,8 @@ export function CartLineItem({ item, onPress }: { item: CartItem; onPress?: () =
         <View style={styles.controls}>
           <QuantityStepper value={quantity} onChange={(q) => setQuantity(product.id, q)} />
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${product.name} from bag`}
             hitSlop={HitSlop}
             onPress={() => {
               haptics.light();

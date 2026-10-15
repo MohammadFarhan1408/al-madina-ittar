@@ -46,6 +46,8 @@ export function ProductCard({
 
   return (
     <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={`${product.name}, ${product.price} ${product.currency}${product.inStock ? '' : ', sold out'}`}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       onPress={() => onPress?.(product)}

@@ -33,6 +33,8 @@ export function CategoryTile({
 
   return (
     <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={category.name}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       onPress={() => onPress?.(category)}

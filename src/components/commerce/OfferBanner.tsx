@@ -24,6 +24,8 @@ export function OfferBanner({ eyebrow, title, subtitle, ctaLabel = 'Shop now', o
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${subtitle}`}
       onPress={() => {
         haptics.light();
         onPress?.();

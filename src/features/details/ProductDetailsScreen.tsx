@@ -93,6 +93,8 @@ export function ProductDetailsScreen() {
           {/* Floating top controls */}
           <View style={[styles.topBar, { top: insets.top + Spacing.sm }]}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
               hitSlop={HitSlop}
               onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
               style={[styles.circle, { borderColor: colors.glassBorder }]}

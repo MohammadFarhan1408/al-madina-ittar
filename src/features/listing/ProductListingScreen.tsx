@@ -177,6 +177,8 @@ export function ProductListingScreen() {
         {SORTS.map((option) => (
           <Pressable
             key={option.key}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: sort === option.key }}
             onPress={() => {
               setSort(option.key);
               setSortOpen(false);

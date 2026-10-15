@@ -89,6 +89,7 @@ export function Card({
   if (onPress) {
     return (
       <AnimatedPressable
+        accessibilityRole="button"
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={onPress}

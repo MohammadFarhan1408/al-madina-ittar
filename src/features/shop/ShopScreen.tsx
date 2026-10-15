@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { enter } from '@/animations';
 import { ArtDecoDivider } from '@/components/brand';
 import { CategoryTile } from '@/components/commerce';
-import { Skeleton, Text } from '@/components/ui';
+import { EmptyState, ErrorState, Skeleton, Text } from '@/components/ui';
 import { Layout, Radius, Spacing } from '@/constants';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
@@ -26,7 +26,7 @@ export function ShopScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { width, isTablet } = useResponsive();
-  const { data, isLoading } = useCategories();
+  const { data, isLoading, isError, refetch, isRefetching } = useCategories();
 
   const columns = isTablet ? 3 : 2;
   const tileWidth = (width - PAD * 2 - GAP * (columns - 1)) / columns;
@@ -55,6 +55,15 @@ export function ShopScreen() {
         numColumns={columns}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={Header}
+        refreshing={isRefetching}
+        onRefresh={() => refetch()}
+        ListEmptyComponent={
+          isLoading ? null : isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : (
+            <EmptyState title="No collections yet" message="New fragrances are being prepared. Please check back soon." />
+          )
+        }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: Layout.tabBarClearance }}
         ListFooterComponent={

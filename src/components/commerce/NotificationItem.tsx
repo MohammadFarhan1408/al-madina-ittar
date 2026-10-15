@@ -29,6 +29,8 @@ export function NotificationItem({
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${notification.read ? '' : 'Unread. '}${notification.title}`}
       onPress={() => onPress?.(notification)}
       style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
     >

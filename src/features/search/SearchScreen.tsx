@@ -56,7 +56,7 @@ export function SearchScreen() {
         <View style={styles.flex}>
           <SearchBar value={query} onChangeText={setQuery} autoFocus onSubmit={() => addRecent(query)} />
         </View>
-        <Pressable hitSlop={HitSlop} onPress={() => router.back()}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Cancel search" hitSlop={HitSlop} onPress={() => router.back()}>
           <Text variant="button" color="accent" uppercase>
             Cancel
           </Text>
@@ -74,7 +74,7 @@ export function SearchScreen() {
                     RECENT
                   </Text>
                 </View>
-                <Pressable hitSlop={HitSlop} onPress={clearRecent}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Clear recent searches" hitSlop={HitSlop} onPress={clearRecent}>
                   <Text variant="label" color="muted" uppercase>
                     Clear
                   </Text>
