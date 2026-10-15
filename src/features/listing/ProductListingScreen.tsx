@@ -1,6 +1,8 @@
 /**
- * ProductListingScreen — filterable, sortable product grid. Reads optional `categoryId`
- * or `query` route params. Scent-family chips filter; a sort BottomSheet reorders.
+ * ProductListingScreen — filterable, sortable product grid. Reads optional `categoryId`,
+ * `collectionId`, `query` and `family` route params. Category/search/all modes are one
+ * server-side `/products` query (q + categoryId + family + sort); a collection is a
+ * curated, unpaginated list, so family/sort are applied client-side only there.
  */
 import { FlashList } from '@shopify/flash-list';
 import { SlidersHorizontal } from 'lucide-react-native';
@@ -12,11 +14,11 @@ import Animated from 'react-native-reanimated';
 import { enter } from '@/animations';
 import { ProductCard, ProductCardSkeleton } from '@/components/commerce';
 import { StackHeader } from '@/components/layout';
-import { BottomSheet, Chip, EmptyState, IconButton, Text } from '@/components/ui';
+import { BottomSheet, Chip, EmptyState, ErrorState, IconButton, Text } from '@/components/ui';
 import { IconSize, Layout, Spacing } from '@/constants';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
-import { useProducts, useProductsByCategory, useSearchProducts } from '@/hooks/queries';
+import { useCategories, useCollectionProducts, useCollections, useProducts } from '@/hooks/queries';
 import type { ProductListParams } from '@/services';
 import type { Product, ScentFamily } from '@/types';
 
@@ -36,9 +38,16 @@ const FAMILIES: ScentFamily[] = ['oud', 'floral', 'amber', 'musk', 'woody', 'spi
 export function ProductListingScreen() {
   const { colors } = useTheme();
   const { width, gridColumns } = useResponsive();
-  const params = useLocalSearchParams<{ categoryId?: string; query?: string }>();
+  const params = useLocalSearchParams<{
+    categoryId?: string;
+    collectionId?: string;
+    query?: string;
+    family?: ScentFamily;
+  }>();
 
-  const [family, setFamily] = useState<ScentFamily | null>(null);
+  const [family, setFamily] = useState<ScentFamily | null>(
+    FAMILIES.includes(params.family as ScentFamily) ? (params.family as ScentFamily) : null,
+  );
   const [sort, setSort] = useState<SortKey>('featured');
   const [sortOpen, setSortOpen] = useState(false);
 
@@ -48,41 +57,51 @@ export function ProductListingScreen() {
     priceDesc: 'price_desc',
     rating: 'rating',
   };
-  const serverParams: ProductListParams = { family: family ?? undefined, sort: SORT_MAP[sort] };
+  const serverParams: ProductListParams = {
+    family: family ?? undefined,
+    sort: SORT_MAP[sort],
+    categoryId: params.categoryId || undefined,
+    q: params.query || undefined,
+  };
 
-  // `/categories/:id/products` only supports page/limit server-side (no family/sort
-  // filters), so that path still needs the client-side pass below; for `all`/`search`
-  // (which do support these filters) it's a harmless no-op re-application.
-  const byCategory = useProductsByCategory(params.categoryId ?? '');
-  const search = useSearchProducts(params.query ?? '', serverParams);
-  const all = useProducts(serverParams);
+  const isCollection = Boolean(params.collectionId);
+  const catalog = useProducts(serverParams, !isCollection);
+  const collection = useCollectionProducts(params.collectionId ?? '');
+  const { data: categories } = useCategories();
+  const { data: collections } = useCollections();
 
-  const source = params.categoryId ? byCategory : params.query ? search : all;
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = source;
+  const source = isCollection ? collection : catalog;
+  const { isLoading, isError, refetch, isRefetching } = source;
+  const fetchNextPage = isCollection ? undefined : catalog.fetchNextPage;
+  const hasNextPage = isCollection ? false : catalog.hasNextPage;
+  const isFetchingNextPage = isCollection ? false : catalog.isFetchingNextPage;
 
   const products = useMemo(() => {
-    let list = [...(data ?? [])];
-    if (family) list = list.filter((p) => p.scentFamily === family);
+    const list = [...(source.data ?? [])];
+    if (!isCollection) return list;
+    const filtered = family ? list.filter((p) => p.scentFamily === family) : list;
     switch (sort) {
       case 'priceAsc':
-        list.sort((a, b) => a.price - b.price);
-        break;
+        return filtered.sort((a, b) => a.price - b.price);
       case 'priceDesc':
-        list.sort((a, b) => b.price - a.price);
-        break;
+        return filtered.sort((a, b) => b.price - a.price);
       case 'rating':
-        list.sort((a, b) => b.rating - a.rating);
-        break;
+        return filtered.sort((a, b) => b.rating - a.rating);
       default:
-        break;
+        return filtered;
     }
-    return list;
-  }, [data, family, sort]);
+  }, [source.data, isCollection, family, sort]);
 
   const cardWidth = (width - PAD * 2 - GAP * (gridColumns - 1)) / gridColumns;
   const open = useCallback((p: Product) => router.push({ pathname: '/product/[id]', params: { id: p.id } }), []);
 
-  const title = params.query ? `"${params.query}"` : params.categoryId ? 'Collection' : 'All Fragrances';
+  const title = params.query
+    ? `"${params.query}"`
+    : params.collectionId
+      ? (collections?.find((c) => c.id === params.collectionId)?.title ?? 'Collection')
+      : params.categoryId
+        ? (categories?.find((c) => c.id === params.categoryId)?.name ?? 'Category')
+        : 'All Fragrances';
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -102,9 +121,11 @@ export function ProductListingScreen() {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: PAD, paddingBottom: Spacing.giant }}
+        refreshing={isRefetching && !isFetchingNextPage}
+        onRefresh={() => refetch()}
         onEndReachedThreshold={0.4}
         onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage?.();
         }}
         ListFooterComponent={
           isFetchingNextPage ? (
@@ -128,8 +149,15 @@ export function ProductListingScreen() {
                 <ProductCardSkeleton key={i} width={cardWidth} />
               ))}
             </View>
+          ) : isError ? (
+            <ErrorState onRetry={() => refetch()} />
           ) : (
-            <EmptyState title="Nothing here yet" message="Try a different scent family or browse the full collection." />
+            <EmptyState
+              title="Nothing here yet"
+              message="Try a different scent family or browse the full collection."
+              actionLabel={family ? 'Clear filter' : undefined}
+              onAction={family ? () => setFamily(null) : undefined}
+            />
           )
         }
         renderItem={({ item, index }) => (
@@ -149,6 +177,8 @@ export function ProductListingScreen() {
         {SORTS.map((option) => (
           <Pressable
             key={option.key}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: sort === option.key }}
             onPress={() => {
               setSort(option.key);
               setSortOpen(false);

@@ -10,16 +10,19 @@ import { cartService, productsService, wishlistService } from '@/services';
 import { useCartStore, useSessionStore, useWishlistStore } from '@/store';
 import type { CartItem } from '@/types';
 
-async function reconciledToCartItems(productIds: string[], quantityById: Map<string, number>) {
-  if (productIds.length === 0) return [] as CartItem[];
-  const products = await productsService.getByIds(productIds);
+async function reconciledToCartItems(lines: { productId: string; quantity: number; volumeMl?: number }[]) {
+  if (lines.length === 0) return [] as CartItem[];
+  const products = await productsService.getByIds(lines.map((l) => l.productId));
   return products
-    .map((product) => {
-      const quantity = quantityById.get(product.id);
-      return quantity ? { product, quantity } : null;
+    .map((product): CartItem | null => {
+      const line = lines.find((l) => l.productId === product.id);
+      return line?.quantity ? { product, quantity: line.quantity, volumeMl: line.volumeMl } : null;
     })
     .filter((item): item is CartItem => item !== null);
 }
+
+const toSyncItems = (items: CartItem[]) =>
+  items.map((i) => ({ productId: i.product.id, quantity: i.quantity, volumeMl: i.volumeMl }));
 
 export async function syncGuestDataOnLogin() {
   const localIds = useWishlistStore.getState().ids;
@@ -28,14 +31,10 @@ export async function syncGuestDataOnLogin() {
   useWishlistStore.setState({ ids: serverIds });
 
   const localItems = useCartStore.getState().items;
-  const payload = localItems.map((i) => ({ productId: i.product.id, quantity: i.quantity }));
+  const payload = toSyncItems(localItems);
   const reconciled = await cartService.sync(payload).catch(() => null);
   if (!reconciled) return;
-  const quantityById = new Map(reconciled.items.map((i) => [i.productId, i.quantity]));
-  const items = await reconciledToCartItems(
-    reconciled.items.map((i) => i.productId),
-    quantityById,
-  );
+  const items = await reconciledToCartItems(reconciled.items);
   useCartStore.setState({ items });
 }
 
@@ -57,6 +56,6 @@ export function startBackgroundSync() {
 
   useCartStore.subscribe((state) => {
     if (!useSessionStore.getState().isAuthenticated) return;
-    void cartService.sync(state.items.map((i) => ({ productId: i.product.id, quantity: i.quantity })));
+    void cartService.sync(toSyncItems(state.items));
   });
 }

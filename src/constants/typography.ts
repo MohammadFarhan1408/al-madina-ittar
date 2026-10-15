@@ -11,6 +11,8 @@
 import type { TextStyle } from 'react-native';
 
 export const FontFamily = {
+  /** Brand display face (same file as the web storefront); single weight. */
+  brand: 'Fugi',
   display: 'PlayfairDisplay_600SemiBold',
   displayBold: 'PlayfairDisplay_700Bold',
   displayMedium: 'PlayfairDisplay_500Medium',
@@ -72,8 +74,8 @@ const preset = (
  * Role-based presets. Spread onto `<Text style={[Typography.heading, ...]} />`.
  */
 export const Typography = {
-  hero: preset(FontFamily.displayBold, FontSize.hero, LineHeight.tight, LetterSpacing.tight),
-  display: preset(FontFamily.display, FontSize.display, LineHeight.tight, LetterSpacing.tight),
+  hero: preset(FontFamily.brand, FontSize.hero, LineHeight.tight, LetterSpacing.normal),
+  display: preset(FontFamily.brand, FontSize.display, LineHeight.tight, LetterSpacing.normal),
   displayItalic: preset(FontFamily.displayItalic, FontSize.xxxl, LineHeight.snug, LetterSpacing.tight),
   heading: preset(FontFamily.display, FontSize.xxxl, LineHeight.snug, LetterSpacing.wide),
   title: preset(FontFamily.displayMedium, FontSize.xxl, LineHeight.snug, LetterSpacing.normal),

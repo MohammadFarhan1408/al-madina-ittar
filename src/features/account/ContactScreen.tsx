@@ -1,40 +1,39 @@
 /**
- * ContactScreen — contact channels and a validated message form (mock submit).
+ * ContactScreen — contact channels and a validated message form (`POST /contact`).
  */
 import { Clock, Mail, MapPin, Phone, Send } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { z } from 'zod';
 
 import { ArtDecoDivider } from '@/components/brand';
 import { StackHeader } from '@/components/layout';
 import { Button, Card, FormField, MenuRow, Text } from '@/components/ui';
 import { IconSize, Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
+import { useSendContact } from '@/hooks/queries';
 import { toast } from '@/store';
-import { haptics, zodResolver } from '@/utils';
-
-const contactSchema = z.object({
-  name: z.string().min(2, 'Please enter your name'),
-  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
-  message: z.string().min(10, 'Your message is a little short'),
-});
-type ContactValues = z.infer<typeof contactSchema>;
+import { getErrorMessage, haptics, zodResolver } from '@/utils';
+import { contactSchema, type ContactValues } from './schemas';
 
 export function ContactScreen() {
   const { colors } = useTheme();
-  const { control, handleSubmit, reset, formState } = useForm<ContactValues>({
+  const { control, handleSubmit, reset } = useForm<ContactValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: { name: '', email: '', message: '' },
   });
 
   const icon = (Ic: typeof Phone) => <Ic size={IconSize.sm} color={colors.accent} strokeWidth={1.75} />;
 
-  const onSubmit = () => {
-    haptics.success();
-    toast.success('Message sent — we will be in touch shortly');
-    reset();
-  };
+  const sendContact = useSendContact();
+  const onSubmit = (values: ContactValues) =>
+    sendContact.mutate(values, {
+      onSuccess: () => {
+        haptics.success();
+        toast.success('Message sent — we will be in touch shortly');
+        reset();
+      },
+      onError: (err) => toast.error(getErrorMessage(err, "Couldn't send your message. Please try again.")),
+    });
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
@@ -68,7 +67,7 @@ export function ContactScreen() {
               label="Send Message"
               variant="gradient"
               glow
-              loading={formState.isSubmitting}
+              loading={sendContact.isPending}
               leftIcon={<Send size={IconSize.sm} color={colors.text.onAccent} strokeWidth={2} />}
               onPress={handleSubmit(onSubmit)}
             />

@@ -40,6 +40,8 @@ export function CollectionCard({
 
   return (
     <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={`${collection.title} collection`}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       onPress={() => onPress?.(collection)}

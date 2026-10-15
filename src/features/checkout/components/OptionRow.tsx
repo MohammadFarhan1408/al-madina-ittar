@@ -24,6 +24,8 @@ export function OptionRow({
   const { colors } = useTheme();
   return (
     <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
       onPress={onPress}
       style={[
         styles.row,

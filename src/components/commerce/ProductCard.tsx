@@ -16,7 +16,7 @@ import { IconSize, Layout, Radius, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { toast, useCartStore } from '@/store';
 import type { Product } from '@/types';
-import { haptics } from '@/utils';
+import { defaultVariant, haptics } from '@/utils';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -37,12 +37,17 @@ export function ProductCard({
 
   const handleAddToCart = () => {
     haptics.success();
-    addItem(product, 1);
-    toast.success(`${product.name} added to cart`);
+    const inCart = useCartStore.getState().items.find((i) => i.product.id === product.id);
+    const result = addItem(product, 1, inCart ? inCart.volumeMl : defaultVariant(product)?.volumeMl);
+    toast.success(
+      result === 'replaced' ? `${product.name} size updated in your cart` : `${product.name} added to cart`,
+    );
   };
 
   return (
     <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={`${product.name}, ${product.price} ${product.currency}${product.inStock ? '' : ', sold out'}`}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       onPress={() => onPress?.(product)}

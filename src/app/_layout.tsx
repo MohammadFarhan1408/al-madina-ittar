@@ -1,3 +1,4 @@
+import { ReducedMotionConfig, ReduceMotion } from 'react-native-reanimated';
 import { Stack, ThemeProvider as NavThemeProvider } from 'expo-router';
 import {
   PlayfairDisplay_500Medium,
@@ -27,6 +28,7 @@ function RootNavigator() {
   const theme = useTheme();
   return (
     <NavThemeProvider value={toNavigationTheme(theme)}>
+      <ReducedMotionConfig mode={ReduceMotion.System} />
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
@@ -56,6 +58,7 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
+    Fugi: require('../../assets/fonts/Fugi.otf'),
     PlayfairDisplay_500Medium,
     PlayfairDisplay_500Medium_Italic,
     PlayfairDisplay_600SemiBold,

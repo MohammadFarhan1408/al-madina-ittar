@@ -36,7 +36,7 @@ export function QuantityStepper({
 
   return (
     <View style={[styles.row, { borderColor: colors.border }, style]}>
-      <Pressable hitSlop={HitSlop} onPress={() => step(-1)} disabled={value <= min} style={styles.btn}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Decrease quantity" hitSlop={HitSlop} onPress={() => step(-1)} disabled={value <= min} style={styles.btn}>
         <Minus
           size={IconSize.sm}
           color={value <= min ? colors.text.muted : colors.text.primary}
@@ -46,7 +46,7 @@ export function QuantityStepper({
       <Text variant="bodyStrong" style={styles.value}>
         {value}
       </Text>
-      <Pressable hitSlop={HitSlop} onPress={() => step(1)} disabled={value >= max} style={styles.btn}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Increase quantity" hitSlop={HitSlop} onPress={() => step(1)} disabled={value >= max} style={styles.btn}>
         <Plus
           size={IconSize.sm}
           color={value >= max ? colors.text.muted : colors.text.primary}

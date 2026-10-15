@@ -46,7 +46,7 @@ export function SearchBar({
         style={[styles.input, { color: colors.text.primary }]}
       />
       {value.length > 0 ? (
-        <Pressable hitSlop={HitSlop} onPress={() => onChangeText('')}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={HitSlop} onPress={() => onChangeText('')}>
           <X size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />
         </Pressable>
       ) : null}

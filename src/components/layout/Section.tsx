@@ -27,7 +27,7 @@ export function SectionHeader({ title, eyebrow, actionLabel, onAction }: Section
         <Text variant="title">{title}</Text>
       </View>
       {actionLabel && onAction ? (
-        <Pressable onPress={onAction} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${actionLabel} ${title}`} onPress={onAction} hitSlop={8}>
           <Text variant="label" color="accent" uppercase>
             {actionLabel}
           </Text>

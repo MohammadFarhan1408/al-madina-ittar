@@ -9,8 +9,10 @@ import {
   Info,
   LogOut,
   Mail,
+  MapPin,
   Package,
   Settings as SettingsIcon,
+  UserRound,
 } from "lucide-react-native";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -112,6 +114,24 @@ export function ProfileScreen() {
               onPress={() => router.push("/orders")}
             />
             <Divider />
+            {isAuthenticated ? (
+              <>
+                <MenuRow
+                  icon={icon(UserRound)}
+                  title="Edit Profile"
+                  subtitle="Name and photo"
+                  onPress={() => router.push("/account/edit-profile")}
+                />
+                <Divider />
+                <MenuRow
+                  icon={icon(MapPin)}
+                  title="Saved Addresses"
+                  subtitle="Delivery addresses"
+                  onPress={() => router.push("/addresses")}
+                />
+                <Divider />
+              </>
+            ) : null}
             <MenuRow
               icon={icon(Heart)}
               title="Wishlist"

@@ -12,6 +12,14 @@ export type ScentFamily =
 
 export type ProductBadge = 'new' | 'bestseller' | 'limited' | 'exclusive';
 
+/** A purchasable size. Prices are integer AED. */
+export type ProductVariant = {
+  volumeMl: number;
+  price: Money;
+  sku?: string;
+  inStock: boolean;
+};
+
 export type Product = {
   id: ID;
   name: string;
@@ -39,4 +47,6 @@ export type Product = {
   isBestSeller: boolean;
   isSignature: boolean;
   isSeasonal: boolean;
+  /** Per-size prices; absent/empty for single-size products. */
+  variants?: ProductVariant[];
 };

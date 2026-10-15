@@ -11,9 +11,8 @@ import { Button, FormField, Text } from '@/components/ui';
 import { IconSize, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { authService } from '@/services';
-import type { ApiError } from '@/types';
 import { toast } from '@/store';
-import { haptics, zodResolver } from '@/utils';
+import { getErrorMessage, haptics, zodResolver } from '@/utils';
 import { forgotPasswordSchema, type ForgotPasswordValues } from '../schemas';
 import { AuthLayout } from '../components/AuthLayout';
 
@@ -32,7 +31,7 @@ export function ForgotPasswordScreen() {
       toast.success('If that account exists, a reset email is on its way.');
       router.push('/(auth)/reset-password');
     } catch (err) {
-      toast.error((err as ApiError).message ?? 'Something went wrong. Please try again.');
+      toast.error(getErrorMessage(err, 'Something went wrong. Please try again.'));
     }
   };
 

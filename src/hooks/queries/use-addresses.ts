@@ -21,6 +21,15 @@ export const useCreateAddress = () => {
   });
 };
 
+export const useUpdateAddress = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Partial<AddressInput> }) =>
+      addressesService.update(id, input),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: QueryKeys.addresses }),
+  });
+};
+
 export const useRemoveAddress = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -4,24 +4,24 @@
 import { Lock, KeyRound } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { Button, FormField, Text } from '@/components/ui';
 import { IconSize, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { authService } from '@/services';
-import type { ApiError } from '@/types';
 import { toast } from '@/store';
-import { haptics, zodResolver } from '@/utils';
+import { getErrorMessage, haptics, zodResolver } from '@/utils';
 import { resetPasswordSchema, type ResetPasswordValues } from '../schemas';
 import { AuthLayout } from '../components/AuthLayout';
 
 export function ResetPasswordScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const { token } = useLocalSearchParams<{ token?: string }>();
   const { control, handleSubmit, formState } = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { token: '', password: '' },
+    defaultValues: { token: token ?? '', password: '' },
   });
 
   const onSubmit = async (values: ResetPasswordValues) => {
@@ -31,7 +31,7 @@ export function ResetPasswordScreen() {
       toast.success('Password updated. Please sign in.');
       router.replace('/(auth)/login');
     } catch (err) {
-      toast.error((err as ApiError).message ?? 'Reset failed. Please request a new link.');
+      toast.error(getErrorMessage(err, 'Reset failed. Please request a new link.'));
     }
   };
 

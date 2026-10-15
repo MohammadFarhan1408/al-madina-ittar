@@ -17,7 +17,8 @@ import { IconSize, Layout, Spacing } from '@/constants';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
 import { useProductsByIds } from '@/hooks/queries';
-import { useWishlistStore } from '@/store';
+import { toast, useCartStore, useWishlistStore } from '@/store';
+import { defaultVariant, haptics } from '@/utils';
 import type { Product } from '@/types';
 
 const GAP = Spacing.lg;
@@ -31,6 +32,14 @@ export function WishlistScreen() {
   const { data, isLoading } = useProductsByIds(ids);
 
   const cardWidth = (width - PAD * 2 - GAP * (gridColumns - 1)) / gridColumns;
+  const addAllToCart = () => {
+    const inCart = new Set(useCartStore.getState().items.map((i) => i.product.id));
+    const addable = (data ?? []).filter((p) => p.inStock && !inCart.has(p.id));
+    addable.forEach((p) => useCartStore.getState().addItem(p, 1, defaultVariant(p)?.volumeMl));
+    haptics.success();
+    toast.success(addable.length ? `${addable.length} added to your bag` : 'Everything available is already in your bag');
+    router.push('/(tabs)/cart');
+  };
   const open = (p: Product) => router.push({ pathname: '/product/[id]', params: { id: p.id } });
 
   const Header = (
@@ -72,7 +81,7 @@ export function WishlistScreen() {
         ListEmptyComponent={isLoading ? <Loader /> : null}
         ListFooterComponent={
           !isLoading && data && data.length > 0 ? (
-            <Button label="Add all to cart" variant="outline" onPress={() => router.push('/(tabs)/cart')} style={styles.footerBtn} />
+            <Button label="Add all to bag" variant="outline" onPress={addAllToCart} style={styles.footerBtn} />
           ) : null
         }
         renderItem={({ item, index }) => (

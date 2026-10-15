@@ -51,7 +51,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
         const refreshToken = await tokenStorage.getRefreshToken();
         if (!refreshToken) return null;
         const { data } = await refreshClient.post<
-          ApiResponse<{ accessToken: string; refreshToken: string }>
+          ApiResponse<{ accessToken: string; refreshToken: string; refreshExpiresAt?: string }>
         >(Endpoints.auth.refresh, { refreshToken });
         await tokenStorage.setTokens(data.data);
         return data.data.accessToken;
@@ -87,7 +87,15 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    if (error.response?.status === 401 && original && !original._retry && !isAuthRequest(original.url)) {
+    // A deactivated account can't be fixed by refreshing — surface the error as-is.
+    const code = (error.response?.data as { code?: string } | undefined)?.code;
+    if (
+      error.response?.status === 401 &&
+      code !== 'ACCOUNT_INACTIVE' &&
+      original &&
+      !original._retry &&
+      !isAuthRequest(original.url)
+    ) {
       original._retry = true;
       const newAccessToken = await refreshAccessToken();
       if (newAccessToken) {

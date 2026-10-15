@@ -106,7 +106,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
           glow
           onPress={goNext}
         />
-        <Pressable onPress={onDone} hitSlop={8} style={styles.skip}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Skip introduction" onPress={onDone} hitSlop={8} style={styles.skip}>
           <Text variant="label" colorValue={Palette.stone} uppercase>
             {index === SLIDES.length - 1 ? ' ' : 'Skip'}
           </Text>

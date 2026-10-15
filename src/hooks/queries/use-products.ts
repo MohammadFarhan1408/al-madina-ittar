@@ -25,10 +25,11 @@ function useFlatInfiniteProducts(
   return { ...query, data };
 }
 
-export const useProducts = (params?: ProductListParams) =>
+export const useProducts = (params?: ProductListParams, enabled = true) =>
   useFlatInfiniteProducts(
     [...QueryKeys.products, params] as const,
     (page) => productsService.getAll({ ...params, page, limit: PAGE_SIZE }),
+    enabled,
   );
 
 export const useFeaturedProducts = () =>
@@ -99,6 +100,39 @@ export const useSearchProducts = (query: string, params?: ProductListParams) =>
     (page) => productsService.search(query, { ...params, page, limit: PAGE_SIZE }),
     query.trim().length > 0,
   );
+
+export const useSearchSuggestions = (query: string) => {
+  const q = query.trim();
+  return useQuery({
+    queryKey: QueryKeys.suggest(q),
+    queryFn: () => productsService.suggest(q),
+    enabled: q.length >= 2,
+    staleTime: 60_000,
+    retry: false,
+  });
+};
+
+export const useTrendingSearches = () =>
+  useQuery({
+    queryKey: QueryKeys.trending,
+    queryFn: () => productsService.trending(),
+    staleTime: 1000 * 60 * 60,
+  });
+
+/** Latest reviews across the top best-sellers (the backend only exposes per-product reviews). */
+export const useHomeReviews = () => {
+  const { data: bestSellers } = useBestSellers();
+  const top = (bestSellers ?? []).slice(0, 3);
+  return useQuery({
+    queryKey: [...QueryKeys.homeReviews, top.map((p) => p.id).join(',')],
+    queryFn: async () => {
+      const pages = await Promise.all(top.map((p) => productsService.getReviews(p.id, 1, 3)));
+      return pages.flatMap((r) => r.items);
+    },
+    enabled: top.length > 0,
+    staleTime: FIVE_MIN,
+  });
+};
 
 export const useProduct = (id: string) =>
   useQuery({

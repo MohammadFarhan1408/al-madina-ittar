@@ -11,10 +11,19 @@ import { mockLatency } from '@/utils';
 export type AuthResult = { user: User; tokens: AuthTokens };
 
 /** Wire shape returned by the backend for sign-up/sign-in (flat, not nested). */
-type AuthWireResult = { user: User; accessToken: string; refreshToken: string };
+type AuthWireResult = {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  refreshExpiresAt?: string;
+};
 const fromWire = (wire: AuthWireResult): AuthResult => ({
   user: wire.user,
-  tokens: { accessToken: wire.accessToken, refreshToken: wire.refreshToken },
+  tokens: {
+    accessToken: wire.accessToken,
+    refreshToken: wire.refreshToken,
+    refreshExpiresAt: wire.refreshExpiresAt,
+  },
 });
 
 export type AuthService = {
@@ -25,6 +34,7 @@ export type AuthService = {
   forgotPassword(email: string): Promise<void>;
   resetPassword(token: string, password: string): Promise<void>;
   updateProfile(input: { fullName?: string; avatar?: string }): Promise<User>;
+  getPreferences(): Promise<UserPreferences>;
   updatePreferences(input: Partial<UserPreferences>): Promise<UserPreferences>;
 };
 
@@ -46,6 +56,13 @@ const makeUser = (fullName: string, email: string): User => ({
 });
 
 let mockCurrentUser: User | null = null;
+let mockPreferences: UserPreferences = {
+  themeMode: 'system',
+  promosEnabled: true,
+  orderUpdatesEnabled: true,
+  currency: 'AED',
+  language: 'en',
+};
 
 const mockService: AuthService = {
   async signUp(fullName, email) {
@@ -81,16 +98,14 @@ const mockService: AuthService = {
     mockCurrentUser = { ...mockCurrentUser, ...input };
     return mockCurrentUser;
   },
+  async getPreferences() {
+    await mockLatency();
+    return { ...mockPreferences };
+  },
   async updatePreferences(input) {
     await mockLatency();
-    return {
-      themeMode: 'system',
-      promosEnabled: true,
-      orderUpdatesEnabled: true,
-      currency: 'AED',
-      language: 'en',
-      ...input,
-    };
+    mockPreferences = { ...mockPreferences, ...input };
+    return { ...mockPreferences };
   },
 };
 
@@ -125,6 +140,10 @@ const remoteService: AuthService = {
   },
   async updateProfile(input) {
     const { data } = await apiClient.patch<ApiResponse<User>>(Endpoints.users.me, input);
+    return data.data;
+  },
+  async getPreferences() {
+    const { data } = await apiClient.get<ApiResponse<UserPreferences>>(Endpoints.users.preferences);
     return data.data;
   },
   async updatePreferences(input) {

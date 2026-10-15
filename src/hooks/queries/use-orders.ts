@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { ordersService, type PlaceOrderInput } from '@/services';
 import { useSessionStore } from '@/store';
-import type { CartItem, Order } from '@/types';
+import type { CartItem, Order, OrderStatus } from '@/types';
 import { QueryKeys } from './query-keys';
 
 // `GET /orders` (list) is requireAuth on the backend — guests have no order history to fetch.
@@ -16,10 +17,32 @@ export const useOrders = (page = 1, limit = 20) => {
   });
 };
 
-export const useOrder = (id: string, initialData?: Order) =>
+const POLL_MS = 2000;
+const POLL_CAP_MS = 2 * 60 * 1000;
+
+/** True while a card/wallet payment is settling and recent enough to be worth polling. */
+export const isSettling = (order?: Order) =>
+  order?.paymentStatus === 'processing' && Date.now() - new Date(order.placedAt).getTime() < POLL_CAP_MS;
+
+/** Paged order history with an optional status filter (`GET /orders?status=`). */
+export const useOrdersList = (status?: OrderStatus) => {
+  const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
+  const query = useInfiniteQuery({
+    queryKey: [...QueryKeys.orders, 'list', status ?? 'all'] as const,
+    queryFn: ({ pageParam }) => ordersService.getAll(pageParam, 10, status),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled: isAuthenticated,
+    staleTime: 1000 * 30,
+  });
+  const items = useMemo(() => query.data?.pages.flatMap((p) => p.items) ?? [], [query.data]);
+  return { ...query, items };
+};
+
+export const useOrder = (id: string, initialData?: Order, guestEmail?: string) =>
   useQuery({
     queryKey: QueryKeys.order(id),
-    queryFn: () => ordersService.getById(id),
+    queryFn: () => ordersService.getById(id, guestEmail),
     initialData,
     enabled: Boolean(id),
     staleTime: 1000 * 60,
@@ -28,7 +51,9 @@ export const useOrder = (id: string, initialData?: Order) =>
     refetchOnMount: 'always',
     // While a card/wallet payment is still settling, poll briefly instead of
     // making the customer manually refresh to see it land.
-    refetchInterval: (query) => (query.state.data?.paymentStatus === 'processing' ? 2000 : false),
+    // Capped at 2 minutes from placement (the web does the same); callers show
+    // "still confirming" copy after that.
+    refetchInterval: (query) => (isSettling(query.state.data) ? POLL_MS : false),
   });
 
 export const usePlaceOrder = () => {

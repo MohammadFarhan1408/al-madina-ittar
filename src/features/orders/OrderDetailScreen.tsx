@@ -4,16 +4,17 @@
  */
 import { useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { StackHeader } from '@/components/layout';
-import { Badge, Button, Card, Divider, Loader, Text, type BadgeTone } from '@/components/ui';
+import { Badge, Button, Card, Divider, ErrorState, Loader, Text, type BadgeTone } from '@/components/ui';
 import { Layout, Radius, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { useOrder, useOrderPayments, useRetryPayment } from '@/hooks/queries';
 import { toast } from '@/store';
 import type { PaymentStatus } from '@/types';
-import { formatPrice, uuid } from '@/utils';
+import { formatPrice, formatVolume, uuid } from '@/utils';
+import { OrderTimeline } from './components/OrderTimeline';
 
 const PAYMENT_TONE: Record<PaymentStatus, BadgeTone> = {
   pending: 'gold',
@@ -27,9 +28,18 @@ const PAYMENT_TONE: Record<PaymentStatus, BadgeTone> = {
 export function OrderDetailScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: order, isLoading } = useOrder(id ?? '');
+  const { data: order, isLoading, isError, refetch } = useOrder(id ?? '');
   const { data: transactions } = useOrderPayments(id ?? '');
   const retryPayment = useRetryPayment(id ?? '');
+
+  if (isError && !order) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <StackHeader overline="Order" title="Order Details" />
+        <ErrorState title="Couldn't load this order" onRetry={() => refetch()} />
+      </View>
+    );
+  }
 
   if (isLoading || !order) {
     return (
@@ -45,7 +55,8 @@ export function OrderDetailScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StackHeader overline={order.reference} title="Order Details" />
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <OrderTimeline order={order} />
         <Card style={styles.section}>
           <View style={styles.row}>
             <Text variant="bodyStrong">Fulfillment</Text>
@@ -55,7 +66,7 @@ export function OrderDetailScreen() {
             <Text variant="bodyStrong">Payment</Text>
             <Badge label={order.paymentStatus} tone={PAYMENT_TONE[order.paymentStatus]} />
           </View>
-          {order.paymentStatus === 'failed' ? (
+          {order.paymentStatus === 'failed' || order.paymentStatus === 'cancelled' ? (
             <Button
               label="Retry Payment"
               variant="outline"
@@ -94,6 +105,7 @@ export function OrderDetailScreen() {
                 <Text variant="bodyStrong">{item.productName}</Text>
                 <Text variant="caption" color="secondary">
                   Qty {item.quantity}
+                  {item.volumeMl ? ` · ${formatVolume(item.volumeMl)}` : ''}
                 </Text>
               </View>
               <Text variant="body">{formatPrice(item.price * item.quantity, order.currency)}</Text>
@@ -145,7 +157,7 @@ export function OrderDetailScreen() {
             ))}
           </Card>
         ) : null}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -153,7 +165,7 @@ export function OrderDetailScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: Layout.screenPadding, gap: Spacing.lg },
+  content: { padding: Layout.screenPadding, gap: Spacing.lg, paddingBottom: Spacing.giant },
   section: { gap: Spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xs },

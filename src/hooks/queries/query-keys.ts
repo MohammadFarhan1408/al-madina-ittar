@@ -19,7 +19,12 @@ export const QueryKeys = {
   productReviews: (id: string) => ['products', id, 'reviews'] as const,
   categories: ['categories'] as const,
   collections: ['collections'] as const,
+  collectionProducts: (id: string) => ['collections', id, 'products'] as const,
+  suggest: (q: string) => ['search', 'suggest', q] as const,
+  trending: ['search', 'trending'] as const,
+  homeReviews: ['reviews', 'home'] as const,
   orders: ['orders'] as const,
   orderPayments: (orderId: string) => ['orders', orderId, 'payments'] as const,
   notifications: ['notifications'] as const,
+  preferences: (userId?: string) => ['preferences', userId] as const,
 };

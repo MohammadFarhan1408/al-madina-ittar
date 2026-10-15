@@ -5,6 +5,7 @@
  * success screen (polls payment status, offers retry on failure).
  */
 import { CreditCard, MapPin, Plus, Truck, Wallet, Zap } from 'lucide-react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -13,16 +14,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderSummary } from '@/components/commerce';
 import { StackHeader } from '@/components/layout';
-import { Button, Card, FormField, GlassSurface, Input, Stepper, Text } from '@/components/ui';
+import { Button, Card, FormField, GlassSurface, Stepper, Text } from '@/components/ui';
 import { IconSize, Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { AppConfig } from '@/core/config';
 import { addressesService } from '@/services';
+import { openStripeCheckoutForOrder, paymentReturnUrl } from '@/services/payments/checkout-browser';
 import { toast, useCartStore, useCartSummary, useSessionStore } from '@/store';
-import { useAddresses, usePlaceOrder, useValidateCoupon } from '@/hooks/queries';
-import { formatPrice, haptics, uuid, zodResolver } from '@/utils';
+import { QueryKeys, useAddresses, useAppliedCoupon, usePlaceOrder } from '@/hooks/queries';
+import { haptics, uuid, zodResolver } from '@/utils';
 import type { Order } from '@/types';
-import { addressSchema, type AddressValues } from './schema';
+import { foldAddress, makeAddressSchema, type AddressValues } from './schema';
+import { CouponField } from '../cart/components/CouponField';
 import { OptionRow } from './components/OptionRow';
 import { OrderSuccess } from './components/OrderSuccess';
 
@@ -53,10 +56,8 @@ export function CheckoutScreen() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(true);
 
-  const [couponInput, setCouponInput] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
-  const [couponError, setCouponError] = useState<string | null>(null);
-
+  const queryClient = useQueryClient();
+  const addressSchema = useMemo(() => makeAddressSchema(!isAuthenticated), [isAuthenticated]);
   const { control, handleSubmit, getValues, reset } = useForm<AddressValues>({
     resolver: zodResolver(addressSchema),
     defaultValues: { fullName: user?.fullName ?? '', phone: '', address: '', city: '', email: '' },
@@ -66,13 +67,13 @@ export function CheckoutScreen() {
   const savedAddresses = addresses.data ?? [];
 
   const placeOrder = usePlaceOrder();
-  const validateCoupon = useValidateCoupon();
+  const coupon = useAppliedCoupon(summary.subtotal);
 
   const shipping = computeShipping(summary.subtotal, delivery);
-  const discount = appliedCoupon?.discountAmount ?? 0;
+  const discount = coupon.discount;
   const checkoutSummary = useMemo(
-    () => ({ ...summary, shipping, total: summary.subtotal + shipping - discount }),
-    [summary, shipping, discount],
+    () => ({ ...summary, shipping, total: summary.subtotal + shipping }),
+    [summary, shipping],
   );
 
   const selectSavedAddress = (id: string) => {
@@ -80,7 +81,7 @@ export function CheckoutScreen() {
     if (!address) return;
     setSelectedAddressId(id);
     setShowAddressForm(false);
-    reset({ fullName: address.fullName, phone: address.phone, address: address.addressLine, city: address.city, email: '' });
+    reset({ fullName: address.fullName, phone: address.phone, address: foldAddress(address), city: address.city, email: '' });
   };
 
   const startNewAddress = () => {
@@ -89,30 +90,12 @@ export function CheckoutScreen() {
     reset({ fullName: user?.fullName ?? '', phone: '', address: '', city: '', email: '' });
   };
 
-  const applyCoupon = () => {
-    if (!couponInput.trim()) return;
-    setCouponError(null);
-    validateCoupon.mutate(
-      { code: couponInput.trim(), subtotal: summary.subtotal },
-      {
-        onSuccess: (preview) => {
-          setAppliedCoupon({ code: preview.coupon.code, discountAmount: preview.discountAmount });
-          haptics.success();
-        },
-        onError: () => {
-          setAppliedCoupon(null);
-          setCouponError('Invalid or expired coupon code.');
-        },
-      },
-    );
-  };
-
   const submitOrder = () => {
     const values = getValues();
     placeOrder.mutate(
       {
         input: {
-          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, volumeMl: i.volumeMl })),
           shippingAddress: {
             fullName: values.fullName,
             phone: values.phone,
@@ -121,8 +104,9 @@ export function CheckoutScreen() {
           },
           deliveryMethod: delivery,
           paymentMethod: payment,
-          guestEmail: isAuthenticated ? undefined : values.email || undefined,
-          couponCode: appliedCoupon?.code,
+          guestEmail: isAuthenticated ? undefined : values.email.trim(),
+          couponCode: coupon.valid ? (coupon.code ?? undefined) : undefined,
+          returnUrl: payment === 'cod' ? undefined : paymentReturnUrl(),
           idempotencyKey,
         },
         cartItems: items,
@@ -137,13 +121,25 @@ export function CheckoutScreen() {
                 fullName: values.fullName,
                 phone: values.phone,
                 addressLine: values.address,
-                country: 'AE',
+                country: 'United Arab Emirates',
                 city: values.city,
                 isDefault: false,
               })
               .catch(() => undefined);
           }
           setPlacedOrder(order);
+          useCartStore.getState().clear();
+          // Card/wallet: the backend already created a Stripe Checkout session; open it
+          // over the confirmation screen, then refetch once the customer closes it.
+          if (payment !== 'cod') {
+            const guestEmail = isAuthenticated ? undefined : values.email.trim();
+            void openStripeCheckoutForOrder(order.id, guestEmail)
+              .catch(() => undefined)
+              .finally(() => {
+                queryClient.invalidateQueries({ queryKey: QueryKeys.order(order.id) });
+                queryClient.invalidateQueries({ queryKey: QueryKeys.orderPayments(order.id) });
+              });
+          }
         },
         onError: () => toast.error('We could not place your order. Please try again.'),
       },
@@ -151,7 +147,7 @@ export function CheckoutScreen() {
   };
 
   if (placedOrder) {
-    return <OrderSuccess order={placedOrder} />;
+    return <OrderSuccess order={placedOrder} guestEmail={isAuthenticated ? undefined : getValues('email').trim()} />;
   }
 
   const next = () => {
@@ -293,54 +289,10 @@ export function CheckoutScreen() {
                 </Text>
               </Card>
 
-              <Card style={styles.couponCard}>
-                <Text variant="overline" color="muted">
-                  COUPON CODE
-                </Text>
-                <View style={styles.couponRow}>
-                  <Input
-                    value={couponInput}
-                    onChangeText={(v) => {
-                      setCouponInput(v);
-                      setCouponError(null);
-                    }}
-                    placeholder="Enter code"
-                    autoCapitalize="characters"
-                    containerStyle={styles.couponInput}
-                  />
-                  <Button
-                    label={appliedCoupon ? 'Applied' : 'Apply'}
-                    variant="outline"
-                    size="sm"
-                    fullWidth={false}
-                    loading={validateCoupon.isPending}
-                    onPress={applyCoupon}
-                  />
-                </View>
-                {couponError ? (
-                  <Text variant="caption" color="error">
-                    {couponError}
-                  </Text>
-                ) : null}
-                {appliedCoupon ? (
-                  <Text variant="caption" color="accent">
-                    {appliedCoupon.code} applied — {formatPrice(appliedCoupon.discountAmount, summary.currency)} off
-                  </Text>
-                ) : null}
-              </Card>
+              <CouponField subtotal={summary.subtotal} currency={summary.currency} />
 
               <Card>
-                <OrderSummary summary={checkoutSummary} />
-                {discount > 0 ? (
-                  <View style={styles.discountRow}>
-                    <Text variant="body" color="secondary">
-                      Discount
-                    </Text>
-                    <Text variant="body" color="accent">
-                      -{formatPrice(discount, summary.currency)}
-                    </Text>
-                  </View>
-                ) : null}
+                <OrderSummary summary={checkoutSummary} discount={discount} />
               </Card>
             </View>
           ) : null}
@@ -354,7 +306,7 @@ export function CheckoutScreen() {
               Total
             </Text>
             <Text variant="priceLarge" color="accent">
-              {checkoutSummary.currency} {checkoutSummary.total}
+              {checkoutSummary.currency} {checkoutSummary.total - discount}
             </Text>
           </View>
           <Button
@@ -379,10 +331,6 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.lg },
   prompt: { gap: Spacing.sm },
   promptBtn: { marginTop: Spacing.sm },
-  couponCard: { gap: Spacing.sm },
-  couponRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  couponInput: { flex: 1 },
-  discountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xs },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   barInner: {
     flexDirection: 'row',
