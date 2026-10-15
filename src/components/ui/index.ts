@@ -47,3 +47,5 @@ export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
 export { BottomSheet } from './BottomSheet';
 export type { BottomSheetProps } from './BottomSheet';
+export { ErrorState } from './ErrorState';
+export type { ErrorStateProps } from './ErrorState';

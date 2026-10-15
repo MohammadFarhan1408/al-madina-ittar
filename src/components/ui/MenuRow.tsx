@@ -35,6 +35,8 @@ export function MenuRow({
     <Pressable
       onPress={onPress}
       disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={subtitle ? `${title}, ${subtitle}` : title}
       style={({ pressed }) => [styles.row, pressed && onPress ? { opacity: 0.6 } : null]}
     >
       {icon ? (
