@@ -24,6 +24,7 @@ export const Endpoints = {
   seasonal: '/products/seasonal',
   search: '/products/search',
   suggest: '/products/suggest',
+  trending: '/search/trending',
   categories: '/categories',
   productsByCategory: (categoryId: string) => `/categories/${categoryId}/products`,
   collections: '/collections',

@@ -10,16 +10,15 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ProductCard, ProductCardSkeleton } from '@/components/commerce';
-import { Chip, EmptyState, SearchBar, Text } from '@/components/ui';
+import { Chip, EmptyState, ErrorState, SearchBar, Text } from '@/components/ui';
 import { HitSlop, IconSize, Layout, Spacing } from '@/constants';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
 import { useDebounce } from '@/hooks/use-debounce';
-import { useSearchProducts } from '@/hooks/queries';
+import { useSearchProducts, useSearchSuggestions, useTrendingSearches } from '@/hooks/queries';
 import { useSearchStore } from '@/store';
 import type { Product } from '@/types';
 
-const TRENDING = ['Oud', 'Rose', 'Amber', 'Saffron', 'Musk'];
 const GAP = Spacing.lg;
 const PAD = Layout.screenPadding;
 
@@ -29,7 +28,10 @@ export function SearchScreen() {
   const { width, gridColumns } = useResponsive();
   const [query, setQuery] = useState('');
   const debounced = useDebounce(query, 350);
-  const { data, isLoading, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const suggestQuery = useDebounce(query, 250);
+  const { data: suggestions } = useSearchSuggestions(suggestQuery);
+  const { data: trending } = useTrendingSearches();
+  const { data, isLoading, isFetching, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useSearchProducts(debounced);
   const recent = useSearchStore((s) => s.recent);
   const addRecent = useSearchStore((s) => s.addRecent);
@@ -86,6 +88,7 @@ export function SearchScreen() {
             </View>
           ) : null}
 
+          {trending?.length ? (
           <View style={styles.block}>
             <View style={styles.blockTitle}>
               <Sparkles size={IconSize.sm} color={colors.accent} strokeWidth={1.75} />
@@ -94,11 +97,12 @@ export function SearchScreen() {
               </Text>
             </View>
             <View style={styles.chips}>
-              {TRENDING.map((term) => (
+              {trending.map((term) => (
                 <Chip key={term} label={term} onPress={() => runTerm(term)} />
               ))}
             </View>
           </View>
+          ) : null}
         </ScrollView>
       ) : (
         <FlashList
@@ -112,8 +116,26 @@ export function SearchScreen() {
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
+          ListHeaderComponent={
+            suggestions?.length ? (
+              <ScrollView
+                horizontal
+                keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.suggestRow}
+              >
+                {suggestions
+                  .filter((term) => term.toLowerCase() !== debounced.trim().toLowerCase())
+                  .map((term) => (
+                    <Chip key={term} label={term} onPress={() => runTerm(term)} />
+                  ))}
+              </ScrollView>
+            ) : null
+          }
           ListEmptyComponent={
-            isLoading || isFetching ? (
+            isError ? (
+              <ErrorState onRetry={() => refetch()} />
+            ) : isLoading || isFetching ? (
               <View style={styles.skeletonGrid}>
                 {Array.from({ length: 4 }).map((_, i) => (
                   <ProductCardSkeleton key={i} width={cardWidth} />
@@ -147,5 +169,6 @@ const styles = StyleSheet.create({
   blockHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   blockTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  suggestRow: { gap: Spacing.sm, paddingBottom: Spacing.lg },
   skeletonGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP },
 });

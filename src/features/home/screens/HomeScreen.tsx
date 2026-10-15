@@ -4,13 +4,15 @@
  * Featured Collections → Signature → Best Sellers → Exclusive Offer → New Arrivals →
  * Seasonal → Reviews → Brand Story.
  */
-import { useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { useScrollY } from '@/animations';
 import { OfferBanner } from '@/components/commerce';
 import { Layout, Spacing } from '@/constants';
+import { useTheme } from '@/core/theme';
 import { useBestSellers, useSeasonal, useSignature } from '@/hooks/queries';
 import { router } from 'expo-router';
 import type { Category, Collection, Product } from '@/types';
@@ -25,6 +27,9 @@ import { ReviewsRail } from '../components/ReviewsRail';
 
 export function HomeScreen() {
   const { scrollY, handler } = useScrollY();
+  const { colors } = useTheme();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   const signature = useSignature();
   const bestSellers = useBestSellers();
   const seasonal = useSeasonal();
@@ -37,7 +42,15 @@ export function HomeScreen() {
     (category: Category) => router.push({ pathname: '/products', params: { categoryId: category.id } }),
     [],
   );
-  const openCollection = useCallback((_c: Collection) => router.push('/products'), []);
+  const openCollection = useCallback(
+    (collection: Collection) => router.push({ pathname: '/products', params: { collectionId: collection.id } }),
+    [],
+  );
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.refetchQueries({ type: 'active' }).catch(() => undefined);
+    setRefreshing(false);
+  }, [queryClient]);
 
   return (
     <View style={styles.root}>
@@ -47,6 +60,7 @@ export function HomeScreen() {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         <HomeHero scrollY={scrollY} />
 
@@ -58,6 +72,8 @@ export function HomeScreen() {
             title="Signature Ittars"
             products={signature.data}
             isLoading={signature.isLoading}
+            isError={signature.isError}
+            onRetry={signature.refetch}
             onSeeAll={() => router.push('/products')}
             onSelect={openProduct}
           />
@@ -66,15 +82,17 @@ export function HomeScreen() {
             title="Best Sellers"
             products={bestSellers.data}
             isLoading={bestSellers.isLoading}
+            isError={bestSellers.isError}
+            onRetry={bestSellers.refetch}
             onSeeAll={() => router.push('/products')}
             onSelect={openProduct}
           />
           <View style={styles.padded}>
             <OfferBanner
-              eyebrow="EXCLUSIVE OFFER"
-              title="20% Off Oud"
-              subtitle="A private sale on our most precious oud, for two days only."
-              onPress={() => router.push('/products')}
+              eyebrow="THE OUD EDIT"
+              title="Oud, Unveiled"
+              subtitle="Deep, resinous and unmistakably Arabian — explore our oud fragrances."
+              onPress={() => router.push({ pathname: '/products', params: { family: 'oud' } })}
             />
           </View>
           <NewArrivalsGrid onSelect={openProduct} />
@@ -83,6 +101,8 @@ export function HomeScreen() {
             title="Seasonal Collection"
             products={seasonal.data}
             isLoading={seasonal.isLoading}
+            isError={seasonal.isError}
+            onRetry={seasonal.refetch}
             onSeeAll={() => router.push('/products')}
             onSelect={openProduct}
           />

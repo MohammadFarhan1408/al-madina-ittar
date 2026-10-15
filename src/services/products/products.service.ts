@@ -12,6 +12,8 @@ import type { ApiResponse, Paginated, Product, ProductBadge, Review, ScentFamily
 import { mockLatency, paginate } from '@/utils';
 
 export type ProductListParams = {
+  /** Free-text filter; `/products?q=` supports family/sort together, unlike `/products/search`. */
+  q?: string;
   page?: number;
   limit?: number;
   categoryId?: string;
@@ -36,6 +38,8 @@ export type ProductsService = {
   getSeasonal(): Promise<Product[]>;
   getByCategory(categoryId: string, params?: ProductListParams): Promise<Paginated<Product>>;
   search(query: string, params?: ProductListParams): Promise<Paginated<Product>>;
+  suggest(query: string): Promise<string[]>;
+  trending(): Promise<string[]>;
   getReviews(productId: string, page?: number, limit?: number): Promise<Paginated<Review>>;
   createReview(productId: string, input: CreateReviewInput): Promise<Review>;
 };
@@ -65,6 +69,7 @@ const sortProducts = (list: Product[], sort?: ProductListParams['sort']) => {
 
 const filterProducts = (list: Product[], params?: ProductListParams) => {
   let result = list;
+  if (params?.q?.trim()) result = result.filter((p) => matchesQuery(p, params.q!));
   if (params?.categoryId) result = result.filter((p) => p.categoryId === params.categoryId);
   if (params?.family) result = result.filter((p) => p.scentFamily === params.family);
   if (params?.badge) result = result.filter((p) => p.badge === params.badge);
@@ -124,6 +129,18 @@ const mockService: ProductsService = {
       params?.limit,
     );
   },
+  async suggest(query) {
+    await mockLatency(100, 250);
+    const needle = query.trim().toLowerCase();
+    return mockProducts
+      .filter((p) => p.name.toLowerCase().startsWith(needle))
+      .slice(0, 6)
+      .map((p) => p.name);
+  },
+  async trending() {
+    await mockLatency();
+    return ['Oud', 'Rose', 'Amber', 'Saffron', 'Musk'];
+  },
   async getReviews(productId, page, limit) {
     await mockLatency();
     return paginate(mockReviews.filter((r) => r.productId === productId), page, limit);
@@ -146,6 +163,7 @@ const mockService: ProductsService = {
 };
 
 const listParamsToQuery = (params?: ProductListParams) => ({
+  q: params?.q,
   page: params?.page,
   limit: params?.limit,
   categoryId: params?.categoryId,
@@ -203,8 +221,18 @@ const remoteService: ProductsService = {
   },
   async search(query, params) {
     const { data } = await apiClient.get<ApiResponse<Paginated<Product>>>(Endpoints.search, {
-      params: { q: query, ...listParamsToQuery(params) },
+      params: { ...listParamsToQuery(params), q: query },
     });
+    return data.data;
+  },
+  async suggest(query) {
+    const { data } = await apiClient.get<ApiResponse<string[]>>(Endpoints.suggest, {
+      params: { q: query, limit: 6 },
+    });
+    return data.data;
+  },
+  async trending() {
+    const { data } = await apiClient.get<ApiResponse<string[]>>(Endpoints.trending);
     return data.data;
   },
   async getReviews(productId, page, limit) {

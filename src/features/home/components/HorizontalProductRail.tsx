@@ -3,10 +3,11 @@
  * Signature, Best Sellers and Seasonal sections. Presentational; data comes from props.
  */
 import { FlashList } from '@shopify/flash-list';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ProductCard, ProductCardSkeleton } from '@/components/commerce';
 import { SectionHeader } from '@/components/layout';
+import { Text } from '@/components/ui';
 import { Layout, Spacing } from '@/constants';
 import type { Product } from '@/types';
 
@@ -17,6 +18,8 @@ export function HorizontalProductRail({
   title,
   products,
   isLoading,
+  isError = false,
+  onRetry,
   onSeeAll,
   onSelect,
 }: {
@@ -24,6 +27,8 @@ export function HorizontalProductRail({
   title: string;
   products?: Product[];
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   onSeeAll?: () => void;
   onSelect?: (product: Product) => void;
 }) {
@@ -43,6 +48,17 @@ export function HorizontalProductRail({
           <ProductCardSkeleton width={CARD_WIDTH} />
           <ProductCardSkeleton width={CARD_WIDTH} />
         </View>
+      ) : isError && !products?.length ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Couldn't load ${title}. Tap to retry`}
+          onPress={onRetry}
+          style={{ paddingHorizontal: Layout.screenPadding, minHeight: 44, justifyContent: 'center' }}
+        >
+          <Text variant="body" color="muted">
+            {"Couldn't load this right now. Tap to retry."}
+          </Text>
+        </Pressable>
       ) : (
         <FlashList
           horizontal
