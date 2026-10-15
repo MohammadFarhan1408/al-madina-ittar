@@ -18,5 +18,7 @@ export { addressesService } from './addresses/addresses.service';
 export type { AddressesService } from './addresses/addresses.service';
 export { paymentsService } from './payments/payments.service';
 export type { PaymentsService } from './payments/payments.service';
+export { contactService } from './contact/contact.service';
+export type { ContactService, ContactInput } from './contact/contact.service';
 export { couponsService } from './coupons/coupons.service';
 export type { CouponsService, CouponPreview } from './coupons/coupons.service';

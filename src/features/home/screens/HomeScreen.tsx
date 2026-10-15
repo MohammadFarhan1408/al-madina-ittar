@@ -23,6 +23,7 @@ import { FloatingHeader } from '../components/FloatingHeader';
 import { HomeHero } from '../components/HomeHero';
 import { HorizontalProductRail } from '../components/HorizontalProductRail';
 import { NewArrivalsGrid } from '../components/NewArrivalsGrid';
+import { NewsletterSignup } from '../components/NewsletterSignup';
 import { ReviewsRail } from '../components/ReviewsRail';
 
 export function HomeScreen() {
@@ -108,6 +109,7 @@ export function HomeScreen() {
           />
           <ReviewsRail />
           <BrandStory />
+          <NewsletterSignup />
         </View>
       </Animated.ScrollView>
     </View>

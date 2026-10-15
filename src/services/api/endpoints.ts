@@ -51,6 +51,8 @@ export const Endpoints = {
   orderPayments: (id: string) => `/orders/${id}/payments`,
   orderPaymentRetry: (id: string) => `/orders/${id}/payments/retry`,
   couponValidate: '/coupons/validate',
+  contact: '/contact',
+  newsletter: '/newsletter',
   notifications: '/notifications',
   notificationRead: (id: string) => `/notifications/${id}/read`,
   notificationsReadAll: '/notifications/read-all',
