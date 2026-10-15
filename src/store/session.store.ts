@@ -21,6 +21,7 @@ type SessionState = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (fullName: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateProfile: (input: { fullName?: string; avatar?: string }) => Promise<void>;
   hydrateFromToken: () => Promise<void>;
 };
 
@@ -47,6 +48,10 @@ export const useSessionStore = create<SessionState>()(
         }
         await tokenStorage.clear();
         set({ user: null, isAuthenticated: false });
+      },
+      updateProfile: async (input) => {
+        const user = await authService.updateProfile(input);
+        set({ user });
       },
       hydrateFromToken: async () => {
         const accessToken = await tokenStorage.getAccessToken();

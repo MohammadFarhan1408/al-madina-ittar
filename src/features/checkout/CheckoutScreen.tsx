@@ -120,7 +120,7 @@ export function CheckoutScreen() {
                 fullName: values.fullName,
                 phone: values.phone,
                 addressLine: values.address,
-                country: 'AE',
+                country: 'United Arab Emirates',
                 city: values.city,
                 isDefault: false,
               })

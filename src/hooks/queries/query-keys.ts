@@ -26,4 +26,5 @@ export const QueryKeys = {
   orders: ['orders'] as const,
   orderPayments: (orderId: string) => ['orders', orderId, 'payments'] as const,
   notifications: ['notifications'] as const,
+  preferences: (userId?: string) => ['preferences', userId] as const,
 };
