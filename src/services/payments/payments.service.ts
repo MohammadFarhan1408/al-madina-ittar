@@ -7,7 +7,7 @@ import { mockLatency } from '@/utils';
 export type PaymentsService = {
   /** `guestEmail` is how the backend authorises a guest to read their own order's payments. */
   getForOrder(orderId: string, guestEmail?: string): Promise<Transaction[]>;
-  retry(orderId: string, idempotencyKey: string, guestEmail?: string): Promise<Transaction>;
+  retry(orderId: string, idempotencyKey: string, guestEmail?: string, returnUrl?: string): Promise<Transaction>;
 };
 
 // Mock in-memory transactions, keyed by orderId, so a retry after a mock
@@ -58,10 +58,10 @@ const remoteService: PaymentsService = {
     });
     return data.data;
   },
-  async retry(orderId, idempotencyKey, guestEmail) {
+  async retry(orderId, idempotencyKey, guestEmail, returnUrl) {
     const { data } = await apiClient.post<ApiResponse<Transaction>>(
       Endpoints.orderPaymentRetry(orderId),
-      { idempotencyKey },
+      { idempotencyKey, returnUrl },
       { params: { email: guestEmail } },
     );
     return data.data;

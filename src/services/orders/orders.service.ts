@@ -14,6 +14,8 @@ export type PlaceOrderInput = {
   paymentMethod: 'card' | 'wallet' | 'cod';
   guestEmail?: string;
   couponCode?: string;
+  /** App deep link Stripe returns to after card/wallet payment (allow-listed by the API). */
+  returnUrl?: string;
   /** Generated once per checkout attempt, resent unchanged on retry — dedupes
    * a double-submit into a single order server-side. */
   idempotencyKey: string;

@@ -19,7 +19,7 @@ import { IconSize, Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { AppConfig } from '@/core/config';
 import { addressesService } from '@/services';
-import { openStripeCheckoutForOrder } from '@/services/payments/checkout-browser';
+import { openStripeCheckoutForOrder, paymentReturnUrl } from '@/services/payments/checkout-browser';
 import { toast, useCartStore, useCartSummary, useSessionStore } from '@/store';
 import { QueryKeys, useAddresses, useAppliedCoupon, usePlaceOrder } from '@/hooks/queries';
 import { haptics, uuid, zodResolver } from '@/utils';
@@ -106,6 +106,7 @@ export function CheckoutScreen() {
           paymentMethod: payment,
           guestEmail: isAuthenticated ? undefined : values.email.trim(),
           couponCode: coupon.valid ? (coupon.code ?? undefined) : undefined,
+          returnUrl: payment === 'cod' ? undefined : paymentReturnUrl(),
           idempotencyKey,
         },
         cartItems: items,

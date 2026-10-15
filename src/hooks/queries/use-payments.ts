@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { paymentsService } from '@/services';
-import { openCheckoutUrl } from '@/services/payments/checkout-browser';
+import { openCheckoutUrl, paymentReturnUrl } from '@/services/payments/checkout-browser';
 import { QueryKeys } from './query-keys';
 
 export const useOrderPayments = (orderId: string, guestEmail?: string) =>
@@ -17,7 +17,7 @@ export const useRetryPayment = (orderId: string, guestEmail?: string) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (idempotencyKey: string) => {
-      const transaction = await paymentsService.retry(orderId, idempotencyKey, guestEmail);
+      const transaction = await paymentsService.retry(orderId, idempotencyKey, guestEmail, paymentReturnUrl());
       if (transaction.metadata?.checkoutUrl) await openCheckoutUrl(transaction.metadata.checkoutUrl);
       return transaction;
     },
