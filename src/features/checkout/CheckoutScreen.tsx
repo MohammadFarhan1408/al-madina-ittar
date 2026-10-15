@@ -112,7 +112,7 @@ export function CheckoutScreen() {
     placeOrder.mutate(
       {
         input: {
-          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, volumeMl: i.volumeMl })),
           shippingAddress: {
             fullName: values.fullName,
             phone: values.phone,

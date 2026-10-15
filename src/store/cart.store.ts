@@ -10,10 +10,15 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { AppConfig } from '@/core/config';
 import { StorageKeys } from '@/constants';
 import type { CartItem, CartSummary, Product } from '@/types';
+import { unitPrice } from '@/utils/pricing';
 
 type CartState = {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number) => void;
+  /**
+   * The backend cart holds one line per product, so adding a different size replaces
+   * the existing line; returns 'replaced' in that case so the UI can say so.
+   */
+  addItem: (product: Product, quantity?: number, volumeMl?: number) => 'added' | 'replaced';
   removeItem: (productId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   increment: (productId: string) => void;
@@ -23,22 +28,27 @@ type CartState = {
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       items: [],
-      addItem: (product, quantity = 1) =>
-        set((state) => {
-          const existing = state.items.find((i) => i.product.id === product.id);
-          if (existing) {
-            return {
-              items: state.items.map((i) =>
-                i.product.id === product.id
-                  ? { ...i, quantity: i.quantity + quantity }
-                  : i,
-              ),
-            };
-          }
-          return { items: [...state.items, { product, quantity }] };
-        }),
+      addItem: (product, quantity = 1, volumeMl) => {
+        const existing = get().items.find((i) => i.product.id === product.id);
+        if (existing && existing.volumeMl !== volumeMl) {
+          set((state) => ({
+            items: state.items.map((i) =>
+              i.product.id === product.id ? { product, quantity, volumeMl } : i,
+            ),
+          }));
+          return 'replaced';
+        }
+        set((state) => ({
+          items: existing
+            ? state.items.map((i) =>
+                i.product.id === product.id ? { ...i, quantity: i.quantity + quantity } : i,
+              )
+            : [...state.items, { product, quantity, volumeMl }],
+        }));
+        return 'added';
+      },
       removeItem: (productId) =>
         set((state) => ({ items: state.items.filter((i) => i.product.id !== productId) })),
       setQuantity: (productId, quantity) =>
@@ -87,7 +97,7 @@ export const selectCartCount = (state: CartState): number =>
  * → infinite re-render ("Maximum update depth exceeded"). Consume via `useCartSummary`.
  */
 export const computeCartSummary = (items: CartItem[]): CartSummary => {
-  const subtotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + unitPrice(i.product, i.volumeMl) * i.quantity, 0);
   const shipping =
     subtotal === 0 || subtotal >= AppConfig.freeShippingThreshold
       ? 0

@@ -11,13 +11,13 @@ import { HitSlop, IconSize, Radius, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { useCartStore } from '@/store';
 import type { CartItem } from '@/types';
-import { haptics } from '@/utils';
+import { formatVolume, haptics, unitPrice } from '@/utils';
 
 export function CartLineItem({ item, onPress }: { item: CartItem; onPress?: () => void }) {
   const { colors } = useTheme();
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
-  const { product, quantity } = item;
+  const { product, quantity, volumeMl } = item;
 
   return (
     <Animated.View entering={FadeIn} exiting={FadeOutRight} style={[styles.row, { borderColor: colors.divider }]}>
@@ -31,7 +31,12 @@ export function CartLineItem({ item, onPress }: { item: CartItem; onPress?: () =
         <Text variant="bodyStrong" numberOfLines={1} onPress={onPress}>
           {product.name}
         </Text>
-        <Price amount={product.price} currency={product.currency} variant="price" showDiscount={false} />
+        {volumeMl ? (
+          <Text variant="caption" color="muted">
+            {formatVolume(volumeMl)}
+          </Text>
+        ) : null}
+        <Price amount={unitPrice(product, volumeMl)} currency={product.currency} variant="price" showDiscount={false} />
         <View style={styles.controls}>
           <QuantityStepper value={quantity} onChange={(q) => setQuantity(product.id, q)} />
           <Pressable

@@ -11,17 +11,19 @@ import { Text } from './Text';
 export type ChipProps = {
   label: string;
   selected?: boolean;
+  disabled?: boolean;
   onPress?: () => void;
   style?: ViewStyle;
 };
 
-export function Chip({ label, selected = false, onPress, style }: ChipProps) {
+export function Chip({ label, selected = false, disabled = false, onPress, style }: ChipProps) {
   const { colors } = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
       onPress={() => {
         haptics.selection();
         onPress?.();
@@ -34,6 +36,7 @@ export function Chip({ label, selected = false, onPress, style }: ChipProps) {
           borderWidth: 1,
           backgroundColor: selected ? colors.accent : 'transparent',
           borderColor: selected ? colors.accent : colors.border,
+          opacity: disabled ? 0.4 : 1,
         },
         style,
       ]}

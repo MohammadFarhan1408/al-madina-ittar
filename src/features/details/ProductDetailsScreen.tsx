@@ -30,11 +30,9 @@ import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
 import { useProduct, useProductReviews, useProductsByCategory } from '@/hooks/queries';
 import { toast, useCartStore, useSessionStore } from '@/store';
-import { formatVolume, haptics } from '@/utils';
+import { defaultVariant, formatVolume, haptics, variantFor } from '@/utils';
 import { ImageGallery } from './components/ImageGallery';
 import { WriteReviewSheet } from './components/WriteReviewSheet';
-
-const SIZES = [30, 50, 75, 100];
 
 export function ProductDetailsScreen() {
   const { colors } = useTheme();
@@ -70,13 +68,21 @@ export function ProductDetailsScreen() {
     );
   }
 
-  const selectedSize = size ?? product.volumeMl;
+  const variants = product.variants ?? [];
+  const selectedSize = size ?? defaultVariant(product)?.volumeMl;
+  const selectedVariant = variantFor(product, selectedSize);
+  const price = selectedVariant?.price ?? product.price;
+  const inStock = selectedVariant ? selectedVariant.inStock : product.inStock;
   const relatedProducts = (related.data ?? []).filter((p) => p.id !== product.id).slice(0, 6);
 
   const addToCart = () => {
     haptics.success();
-    addItem(product, qty);
-    toast.success(`${product.name} × ${qty} added to cart`);
+    const result = addItem(product, qty, selectedSize);
+    toast.success(
+      result === 'replaced'
+        ? `${product.name} size updated in your cart`
+        : `${product.name} × ${qty} added to cart`,
+    );
   };
 
   return (
@@ -122,7 +128,7 @@ export function ProductDetailsScreen() {
 
           <View style={styles.metaRow}>
             <Rating value={product.rating} reviewCount={product.reviewCount} size={IconSize.sm} />
-            <Price amount={product.price} originalAmount={product.originalPrice} currency={product.currency} variant="priceLarge" />
+            <Price amount={price} originalAmount={selectedVariant ? undefined : product.originalPrice} currency={product.currency} variant="priceLarge" />
           </View>
 
           <ArtDecoDivider label="FRAGRANCE NOTES" />
@@ -132,14 +138,24 @@ export function ProductDetailsScreen() {
             ))}
           </View>
 
-          <Text variant="subtitle" style={styles.sectionTitle}>
-            Size
-          </Text>
-          <View style={styles.sizes}>
-            {SIZES.map((s) => (
-              <Chip key={s} label={formatVolume(s)} selected={selectedSize === s} onPress={() => setSize(s)} />
-            ))}
-          </View>
+          {variants.length > 0 ? (
+            <>
+              <Text variant="subtitle" style={styles.sectionTitle}>
+                Size
+              </Text>
+              <View style={styles.sizes}>
+                {variants.map((v) => (
+                  <Chip
+                    key={v.volumeMl}
+                    label={v.inStock ? formatVolume(v.volumeMl) : `${formatVolume(v.volumeMl)} · sold out`}
+                    selected={selectedSize === v.volumeMl}
+                    disabled={!v.inStock}
+                    onPress={() => setSize(v.volumeMl)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
 
           <Text variant="subtitle" style={styles.sectionTitle}>
             The Composition
@@ -183,10 +199,10 @@ export function ProductDetailsScreen() {
         <View style={[styles.barInner, { borderTopColor: colors.divider }]}>
           <QuantityStepper value={qty} onChange={setQty} />
           <Button
-            label={product.inStock ? 'Add to Cart' : 'Sold Out'}
+            label={inStock ? 'Add to Cart' : 'Sold Out'}
             variant="gradient"
             glow
-            disabled={!product.inStock}
+            disabled={!inStock}
             onPress={addToCart}
             style={styles.addBtn}
           />
