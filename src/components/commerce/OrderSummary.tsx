@@ -8,27 +8,28 @@ import { Spacing } from '@/constants';
 import type { CartSummary } from '@/types';
 import { formatPrice } from '@/utils';
 
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Row({ label, value, strong, accent }: { label: string; value: string; strong?: boolean; accent?: boolean }) {
   return (
     <View style={styles.row}>
       <Text variant={strong ? 'subtitle' : 'body'} color={strong ? 'primary' : 'secondary'}>
         {label}
       </Text>
-      <Text variant={strong ? 'priceLarge' : 'body'} color={strong ? 'accent' : 'primary'}>
+      <Text variant={strong ? 'priceLarge' : 'body'} color={strong || accent ? 'accent' : 'primary'}>
         {value}
       </Text>
     </View>
   );
 }
 
-export function OrderSummary({ summary }: { summary: CartSummary }) {
+export function OrderSummary({ summary, discount = 0 }: { summary: CartSummary; discount?: number }) {
   const { subtotal, shipping, total, currency } = summary;
   return (
     <View style={styles.wrap}>
       <Row label="Subtotal" value={formatPrice(subtotal, currency)} />
       <Row label="Shipping" value={shipping === 0 ? 'Complimentary' : formatPrice(shipping, currency)} />
+      {discount > 0 ? <Row label="Discount" value={`-${formatPrice(discount, currency)}`} accent /> : null}
       <Divider spacing={Spacing.xs} />
-      <Row label="Total" value={formatPrice(total, currency)} strong />
+      <Row label="Total" value={formatPrice(total - discount, currency)} strong />
     </View>
   );
 }

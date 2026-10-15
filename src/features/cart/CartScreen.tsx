@@ -13,8 +13,10 @@ import { Button, EmptyState, GlassSurface, Text } from '@/components/ui';
 import { IconSize, Layout, Spacing } from '@/constants';
 import { useResponsive } from '@/core/platform';
 import { useTheme } from '@/core/theme';
+import { useAppliedCoupon } from '@/hooks/queries';
 import { useCartStore, useCartSummary } from '@/store';
 import { CartLineItem } from './components/CartLineItem';
+import { CouponField } from './components/CouponField';
 
 export function CartScreen() {
   const { colors } = useTheme();
@@ -22,6 +24,7 @@ export function CartScreen() {
   const { width } = useResponsive();
   const items = useCartStore((s) => s.items);
   const summary = useCartSummary();
+  const coupon = useAppliedCoupon(summary.subtotal);
 
   const maxWidth = Math.min(width, Layout.maxContentWidth);
 
@@ -54,11 +57,14 @@ export function CartScreen() {
             onPress={() => router.push({ pathname: '/product/[id]', params: { id: item.product.id } })}
           />
         ))}
+        <View style={styles.coupon}>
+          <CouponField subtotal={summary.subtotal} currency={summary.currency} />
+        </View>
       </ScrollView>
 
       <GlassSurface radius={0} intensity={70} bordered={false} style={[styles.footer, { paddingBottom: insets.bottom + Layout.tabBarClearance - Spacing.xl }]}>
         <View style={[styles.footerInner, { borderTopColor: colors.divider }]}>
-          <OrderSummary summary={summary} />
+          <OrderSummary summary={summary} discount={coupon.discount} />
           <Text variant="caption" color="muted" align="center">
             Express delivery, if selected, is added at checkout.
           </Text>
@@ -86,6 +92,7 @@ function Header({ count, top }: { count: number; top: number }) {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingHorizontal: Layout.screenPadding, paddingBottom: 280 },
+  coupon: { marginTop: Spacing.lg },
   header: { gap: Spacing.sm, paddingBottom: Spacing.lg, alignItems: 'center' },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   footerInner: {

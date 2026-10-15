@@ -14,6 +14,9 @@ import { unitPrice } from '@/utils/pricing';
 
 type CartState = {
   items: CartItem[];
+  /** Applied coupon code (re-validated server-side against the live subtotal). */
+  couponCode: string | null;
+  setCoupon: (code: string | null) => void;
   /**
    * The backend cart holds one line per product, so adding a different size replaces
    * the existing line; returns 'replaced' in that case so the UI can say so.
@@ -30,6 +33,8 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      couponCode: null,
+      setCoupon: (couponCode) => set({ couponCode }),
       addItem: (product, quantity = 1, volumeMl) => {
         const existing = get().items.find((i) => i.product.id === product.id);
         if (existing && existing.volumeMl !== volumeMl) {
@@ -74,7 +79,7 @@ export const useCartStore = create<CartState>()(
             )
             .filter((i) => i.quantity > 0),
         })),
-      clear: () => set({ items: [] }),
+      clear: () => set({ items: [], couponCode: null }),
     }),
     {
       name: StorageKeys.cart,
