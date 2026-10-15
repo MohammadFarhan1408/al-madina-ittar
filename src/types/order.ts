@@ -55,4 +55,6 @@ export type Order = {
   couponCode?: string;
   discountAmount?: Money;
   guestEmail?: string;
+  /** Status changes with timestamps; `processing` is seeded at creation. */
+  statusHistory?: { status: OrderStatus; at: string; by?: string }[];
 };

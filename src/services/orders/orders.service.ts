@@ -2,7 +2,7 @@ import { AppConfig } from '@/core/config';
 import { apiClient } from '@/services/api/client';
 import { Endpoints } from '@/services/api/endpoints';
 import { mockOrders } from '@/services/mock/orders.mock';
-import type { ApiResponse, CartItem, Order, Paginated, ShippingAddress } from '@/types';
+import type { ApiResponse, CartItem, Order, OrderStatus, Paginated, ShippingAddress } from '@/types';
 import { mockLatency, paginate } from '@/utils';
 
 /** Matches the backend's `POST /orders` body — never send full `Product`/`CartSummary`
@@ -20,7 +20,7 @@ export type PlaceOrderInput = {
 };
 
 export type OrdersService = {
-  getAll(page?: number, limit?: number): Promise<Paginated<Order>>;
+  getAll(page?: number, limit?: number, status?: OrderStatus): Promise<Paginated<Order>>;
   /** `guestEmail` lets a guest read the order they placed (`GET /orders/:id?email=`). */
   getById(id: string, guestEmail?: string): Promise<Order>;
   place(input: PlaceOrderInput, cartItems: CartItem[]): Promise<Order>;
@@ -67,9 +67,9 @@ const makeOrder = (input: PlaceOrderInput, cartItems: CartItem[]): Order => {
 };
 
 const mockService: OrdersService = {
-  async getAll(page, limit) {
+  async getAll(page, limit, status) {
     await mockLatency();
-    return paginate(sessionOrders, page, limit);
+    return paginate(status ? sessionOrders.filter((o) => o.status === status) : sessionOrders, page, limit);
   },
   async getById(id) {
     await mockLatency();
@@ -91,9 +91,9 @@ const mockService: OrdersService = {
 };
 
 const remoteService: OrdersService = {
-  async getAll(page, limit) {
+  async getAll(page, limit, status) {
     const { data } = await apiClient.get<ApiResponse<Paginated<Order>>>(Endpoints.orders, {
-      params: { page, limit },
+      params: { page, limit, status },
     });
     return data.data;
   },

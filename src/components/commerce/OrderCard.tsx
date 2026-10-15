@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { Badge, Card, Price, Text, type BadgeTone } from '@/components/ui';
 import { Radius, Spacing } from '@/constants';
 import type { Order, OrderStatus } from '@/types';
+import { formatShortDate } from '@/utils';
 
 const STATUS_TONE: Record<OrderStatus, BadgeTone> = {
   processing: 'gold',
@@ -24,7 +25,7 @@ export function OrderCard({ order, onPress }: { order: Order; onPress?: (order: 
         <View style={styles.headerText}>
           <Text variant="bodyStrong">{order.reference}</Text>
           <Text variant="caption" color="muted">
-            {order.placedAt}
+            {formatShortDate(order.placedAt)}
           </Text>
         </View>
         <Badge label={order.status} tone={STATUS_TONE[order.status]} />

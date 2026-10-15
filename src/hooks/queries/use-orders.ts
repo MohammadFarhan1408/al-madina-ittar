@@ -1,8 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { ordersService, type PlaceOrderInput } from '@/services';
 import { useSessionStore } from '@/store';
-import type { CartItem, Order } from '@/types';
+import type { CartItem, Order, OrderStatus } from '@/types';
 import { QueryKeys } from './query-keys';
 
 // `GET /orders` (list) is requireAuth on the backend — guests have no order history to fetch.
@@ -22,6 +23,21 @@ const POLL_CAP_MS = 2 * 60 * 1000;
 /** True while a card/wallet payment is settling and recent enough to be worth polling. */
 export const isSettling = (order?: Order) =>
   order?.paymentStatus === 'processing' && Date.now() - new Date(order.placedAt).getTime() < POLL_CAP_MS;
+
+/** Paged order history with an optional status filter (`GET /orders?status=`). */
+export const useOrdersList = (status?: OrderStatus) => {
+  const isAuthenticated = useSessionStore((s) => s.isAuthenticated);
+  const query = useInfiniteQuery({
+    queryKey: [...QueryKeys.orders, 'list', status ?? 'all'] as const,
+    queryFn: ({ pageParam }) => ordersService.getAll(pageParam, 10, status),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    enabled: isAuthenticated,
+    staleTime: 1000 * 30,
+  });
+  const items = useMemo(() => query.data?.pages.flatMap((p) => p.items) ?? [], [query.data]);
+  return { ...query, items };
+};
 
 export const useOrder = (id: string, initialData?: Order, guestEmail?: string) =>
   useQuery({

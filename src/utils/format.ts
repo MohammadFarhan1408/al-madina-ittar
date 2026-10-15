@@ -34,3 +34,11 @@ export const calcDiscountPercent = (price: Money, original?: Money): number | nu
   if (!original || original <= price) return null;
   return Math.round(((original - price) / original) * 100);
 };
+
+/** "2 Oct" — short day/month for order dates (falls back to the raw string if unparseable). */
+export const formatShortDate = (iso?: string): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-AE', { day: 'numeric', month: 'short' });
+};
