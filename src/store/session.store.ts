@@ -50,8 +50,9 @@ export const useSessionStore = create<SessionState>()(
       },
       hydrateFromToken: async () => {
         const accessToken = await tokenStorage.getAccessToken();
-        if (!accessToken) {
-          set({ isHydrating: false });
+        if (!accessToken || (await tokenStorage.isRefreshExpired())) {
+          await tokenStorage.clear();
+          set({ user: null, isAuthenticated: false, isHydrating: false });
           return;
         }
         try {

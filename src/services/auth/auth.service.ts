@@ -11,10 +11,19 @@ import { mockLatency } from '@/utils';
 export type AuthResult = { user: User; tokens: AuthTokens };
 
 /** Wire shape returned by the backend for sign-up/sign-in (flat, not nested). */
-type AuthWireResult = { user: User; accessToken: string; refreshToken: string };
+type AuthWireResult = {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+  refreshExpiresAt?: string;
+};
 const fromWire = (wire: AuthWireResult): AuthResult => ({
   user: wire.user,
-  tokens: { accessToken: wire.accessToken, refreshToken: wire.refreshToken },
+  tokens: {
+    accessToken: wire.accessToken,
+    refreshToken: wire.refreshToken,
+    refreshExpiresAt: wire.refreshExpiresAt,
+  },
 });
 
 export type AuthService = {

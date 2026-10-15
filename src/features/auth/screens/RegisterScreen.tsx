@@ -11,9 +11,8 @@ import { Button, FormField, Text } from '@/components/ui';
 import { IconSize, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { syncGuestDataOnLogin } from '@/services/session-sync';
-import type { ApiError } from '@/types';
 import { toast, useSessionStore } from '@/store';
-import { haptics, zodResolver } from '@/utils';
+import { getErrorMessage, haptics, zodResolver } from '@/utils';
 import { registerSchema, type RegisterValues } from '../schemas';
 import { AuthLayout } from '../components/AuthLayout';
 import { SocialRow } from '../components/SocialRow';
@@ -36,7 +35,7 @@ export function RegisterScreen() {
       if (router.canGoBack()) router.back();
       else router.replace('/(tabs)');
     } catch (err) {
-      toast.error((err as ApiError).message ?? 'Registration failed. Please try again.');
+      toast.error(getErrorMessage(err, 'Registration failed. Please try again.'));
     }
   };
 
