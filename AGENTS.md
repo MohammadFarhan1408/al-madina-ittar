@@ -14,9 +14,11 @@ must keep working for backend-less UI dev.
 - **Don't add mobile UI for an endpoint that doesn't exist.** Check
   `../docs/api-reference.md` and the actual backend route inventory
   (`al-madina-api/src/modules/*/*.routes.ts`) before building a screen or
-  action against a feature — coupons and recently-viewed were explicitly
-  descoped this way (see `../docs/mobile-flow.md` §6); don't resurrect them
-  speculatively.
+  action against a feature — recently-viewed was explicitly descoped this way
+  (see `../docs/mobile-flow.md` §6); don't resurrect it speculatively. Also
+  not buildable (no backend support): customer order cancel, change password,
+  delete account, OTP/email verification, avatar upload, newsletter
+  unsubscribe, real push delivery.
 - **When a field is added to `Order`/`Product`/`User` on the backend, check
   both `al-madina-admin` and this app for the same field.** The mobile
   `types/` (e.g. `types/order.ts`, `types/product.ts`) intentionally mirror
@@ -33,14 +35,19 @@ must keep working for backend-less UI dev.
   the Zustand stores, which `session-sync.ts`'s background subscription
   syncs to the server. Adding a second, independent sync path there is how
   you get the local store and the server disagreeing.
-- **Coupons and variant-priced products are known-incomplete areas.** The
-  backend now resolves per-`volumeMl` variant pricing server-side
-  (`resolveLinePricing` in `al-madina-api`), but no mobile screen surfaces a
-  price-affecting size picker yet — the Product Details size chips are still
-  cosmetic. Don't build UI implying price changes by size without wiring the
-  selected `volumeMl` through cart/checkout first. Coupons have no
-  customer-facing endpoint at all — don't add a coupon field/button without
-  confirming backend support first.
+- **Variants and coupons are wired.** Product Details sizes come from
+  `product.variants`; `volumeMl` travels through the cart store, cart sync and
+  `POST /orders`, and the backend re-prices (`resolveLinePricing`). The
+  backend cart holds ONE line per product, so adding a different size
+  *replaces* the line (`addItem` returns `'replaced'`) — don't try to keep two
+  sizes of one product. Coupons: the code lives in the cart store
+  (`couponCode`), is validated via `POST /coupons/validate`, re-validated on
+  subtotal change (`useAppliedCoupon`), and sent on the order only when valid.
+- **Card/wallet payments go through Stripe Checkout in the in-app browser**
+  (`services/payments/checkout-browser.ts`). The backend hard-codes Stripe's
+  return URL to the web storefront, so the app can't auto-return; it refetches
+  the order when the browser closes and polls for 2 minutes. Guests must pass
+  their email (`?email=`) when reading their own order/payments.
 - **The Cart screen's total is not the final checkout total** (no express
   surcharge until `deliveryMethod` is chosen at checkout) — don't "fix" this
   by computing the surcharge client-side in the cart; the checkout screen is
