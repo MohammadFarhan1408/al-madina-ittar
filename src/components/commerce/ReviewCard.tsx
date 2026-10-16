@@ -20,7 +20,7 @@ export function ReviewCard({ review, width }: { review: Review; width?: number }
       style={[
         styles.card,
         { backgroundColor: colors.surface, borderColor: colors.border },
-        width ? { width } : null,
+        width ? { width, minHeight: 236 } : null,
       ]}
     >
       <View style={styles.stars}>
@@ -64,11 +64,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     padding: Spacing.xl,
     gap: Spacing.md,
-    minHeight: 236,
   },
   stars: { flexDirection: 'row', gap: 3 },
   title: { fontSize: 18, lineHeight: 24 },
-  body: { flex: 1 },
+  body: { flexGrow: 1 },
   author: {
     flexDirection: 'row',
     alignItems: 'center',

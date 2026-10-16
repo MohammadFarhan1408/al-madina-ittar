@@ -6,12 +6,16 @@ import { create } from 'zustand';
 
 export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
 
+/** Optional inline action rendered at the trailing edge of a toast (e.g. "View bag"). */
+export type ToastAction = { label: string; onPress: () => void };
+
 export type ToastConfig = {
   id: string;
   message: string;
   title?: string;
   variant: ToastVariant;
   duration: number;
+  action?: ToastAction;
 };
 
 type ToastInput = {
@@ -19,6 +23,7 @@ type ToastInput = {
   title?: string;
   variant?: ToastVariant;
   duration?: number;
+  action?: ToastAction;
 };
 
 type UIState = {
@@ -29,10 +34,14 @@ type UIState = {
 
 export const useUIStore = create<UIState>((set) => ({
   toasts: [],
-  showToast: ({ message, title, variant = 'info', duration = 2800 }) => {
+  showToast: ({ message, title, variant = 'info', duration, action }) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => ({
-      toasts: [...state.toasts, { id, message, title, variant, duration }],
+      // Actionable toasts linger a little longer so there is time to tap them.
+      toasts: [
+        ...state.toasts,
+        { id, message, title, variant, duration: duration ?? (action ? 4200 : 2800), action },
+      ],
     }));
     return id;
   },

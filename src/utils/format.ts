@@ -2,10 +2,15 @@
 
 import type { Money } from '@/types';
 
+/**
+ * Latin codes for Gulf currencies: the Arabic glyphs (د.إ / ﷼) are right-to-left and
+ * get re-ordered by the bidi algorithm next to Latin digits ("410 د.إ"), which looks
+ * broken inside English UI. "AED 410" reads correctly everywhere.
+ */
 const CURRENCY_SYMBOLS: Record<string, string> = {
-  AED: 'د.إ',
+  AED: 'AED',
   USD: '$',
-  SAR: '﷼',
+  SAR: 'SAR',
   EUR: '€',
   GBP: '£',
 };
