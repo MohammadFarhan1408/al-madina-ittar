@@ -364,9 +364,9 @@ export function ProductDetailsScreen() {
           onPress={goBack}
           style={({ pressed }) => [styles.circle, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <ChevronLeft size={20} color={Palette.ink} strokeWidth={1.75} />
+          <ChevronLeft size={20} color={Palette.ivoryText} strokeWidth={1.5} />
         </Pressable>
-        <WishlistButton productId={product.id} productName={product.name} size={18} onImage />
+        <WishlistButton productId={product.id} productName={product.name} size={17} onImage />
       </View>
 
       {/* Sticky purchase bar */}
@@ -467,7 +467,7 @@ function DetailsSkeleton({
       </View>
       <View style={[styles.topBar, { top: topInset + Spacing.xs }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onBack} style={styles.circle}>
-          <ChevronLeft size={20} color={Palette.ink} strokeWidth={1.75} />
+          <ChevronLeft size={20} color={Palette.ivoryText} strokeWidth={1.5} />
         </Pressable>
       </View>
     </View>
@@ -550,12 +550,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   circle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    margin: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(247, 243, 234, 0.92)',
+    backgroundColor: 'rgba(11, 11, 11, 0.42)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(243, 238, 227, 0.18)',
   },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   barInner: {

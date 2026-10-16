@@ -1,6 +1,9 @@
 /**
- * WishlistButton — heart toggle bound to the wishlist store. Pops & fills on activation.
- * `onImage` renders a translucent disc so the control stays legible over photography.
+ * WishlistButton — heart toggle bound to the wishlist store. Pops on activation.
+ *
+ * `onImage` (product imagery): a small smoked-glass disc with a champagne-gold heart —
+ * outlined when idle, filled gold when saved — legible on light and dark photos alike.
+ * Default (on surfaces): ink outline, filled gold when saved.
  */
 import { Heart } from 'lucide-react-native';
 import { Pressable, StyleSheet } from 'react-native';
@@ -38,7 +41,7 @@ export function WishlistButton({
 
   const onPress = () => {
     const willAdd = !isWishlisted;
-    scale.value = withSequence(withSpring(1.25, spring.bouncy), withSpring(1, spring.soft));
+    scale.value = withSequence(withSpring(1.28, spring.bouncy), withSpring(1, spring.soft));
     haptics.medium();
     toggle(productId);
     toast.success(
@@ -48,8 +51,8 @@ export function WishlistButton({
 
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const idle = onImage ? Palette.ink : colors.text.primary;
-  const active = onImage ? Palette.burgundyLight : colors.error.base;
+  const gold = onImage ? Palette.champagne : colors.accent;
+  const stroke = isWishlisted ? gold : onImage ? Palette.ivoryText : colors.text.primary;
 
   return (
     <Pressable
@@ -63,8 +66,8 @@ export function WishlistButton({
       <Animated.View style={[onImage && styles.disc, animatedStyle]}>
         <AnimatedHeart
           size={size}
-          color={isWishlisted ? active : idle}
-          fill={isWishlisted ? active : 'transparent'}
+          color={stroke}
+          fill={isWishlisted ? gold : 'transparent'}
           strokeWidth={1.5}
         />
       </Animated.View>
@@ -78,7 +81,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(247, 243, 234, 0.92)',
+    backgroundColor: 'rgba(11, 11, 11, 0.42)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(243, 238, 227, 0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,19 +1,22 @@
 /**
- * AboutScreen — brand heritage: hero, story, a timeline of milestones and house values.
+ * AboutScreen — brand heritage as an editorial page: a cinematic opener (back control
+ * floats over it), the story set as a lede, a hairline timeline of milestones and the
+ * house values in a ruled two-up grid. Copy is unchanged.
  */
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Award, Gem, Leaf, Sparkles } from 'lucide-react-native';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ArtDecoDivider, ArtDecoFrame, LogoMark } from '@/components/brand';
 import { StackHeader } from '@/components/layout';
-import { Card, Text } from '@/components/ui';
-import { IconSize, Layout, Radius, Spacing } from '@/constants';
+import { Text } from '@/components/ui';
+import { Layout, Spacing } from '@/constants';
 import { Palette } from '@/constants/colors';
 import { useTheme } from '@/core/theme';
 
-const HERO = 'https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?w=900&q=80&auto=format&fit=crop';
+const HERO = 'https://images.unsplash.com/photo-1547887538-e3a2f32cb1cc?w=1200&q=80&auto=format&fit=crop';
 
 const TIMELINE = [
   { year: '1952', label: 'The first Al Madina atelier opens in the old souk.' },
@@ -31,27 +34,35 @@ const VALUES = [
 
 export function AboutScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const heroHeight = Math.round(Math.min(Math.max(height * 0.56, 380), 560));
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <StackHeader overline="Our Heritage" title="About" transparent />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
-          <Image source={{ uri: HERO }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
-          <LinearGradient colors={['rgba(11,11,11,0.4)', 'rgba(11,11,11,0.95)']} style={StyleSheet.absoluteFill} />
-          <ArtDecoFrame color={Palette.champagne} inset={Spacing.lg} />
-          <View style={styles.heroContent}>
-            <LogoMark size={56} color={Palette.champagne} />
-            <Text variant="display" colorValue={Palette.ivory} align="center" style={styles.heroTitle}>
-              Al Madina
-            </Text>
-            <Text variant="overline" colorValue={Palette.champagne} align="center">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + Spacing.giant }}>
+        <View style={[styles.hero, { height: heroHeight }]}>
+          <Image source={{ uri: HERO }} style={StyleSheet.absoluteFill} contentFit="cover" transition={400} accessibilityIgnoresInvertColors />
+          <LinearGradient
+            colors={['rgba(11,11,11,0.55)', 'rgba(11,11,11,0.25)', 'rgba(11,11,11,0.95)']}
+            locations={[0, 0.4, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <Animated.View entering={FadeInDown.duration(600)} style={styles.heroContent}>
+            <Text variant="overline" colorValue={Palette.champagne}>
               MAISON DE PARFUM · EST. 1952
             </Text>
-          </View>
+            <Text variant="hero" colorValue={Palette.ivoryText} accessibilityRole="header">
+              Al Madina
+            </Text>
+            <View style={styles.heroRule} />
+          </Animated.View>
         </View>
 
         <View style={styles.section}>
+          <Text variant="displayItalic" style={styles.lede}>
+            To capture the soul of Arabia in a bottle.
+          </Text>
           <Text variant="body" color="secondary" style={styles.story}>
             For over seventy years, the House of Al Madina has pursued a single obsession: to capture
             the soul of Arabia in a bottle. From the oud forests of the East to the rose gardens of
@@ -60,55 +71,80 @@ export function AboutScreen() {
           </Text>
         </View>
 
-        <ArtDecoDivider label="OUR JOURNEY" style={styles.center} />
-        <View style={styles.timeline}>
-          {TIMELINE.map((item) => (
-            <View key={item.year} style={styles.timelineRow}>
-              <Text variant="title" color="accent" style={styles.year}>
-                {item.year}
-              </Text>
-              <View style={[styles.timelineLine, { backgroundColor: colors.divider }]} />
-              <Text variant="body" color="secondary" style={styles.timelineLabel}>
-                {item.label}
-              </Text>
-            </View>
-          ))}
+        <View style={[styles.section, styles.ruled, { borderTopColor: colors.divider }]}>
+          <Text variant="overline" color="accent" accessibilityRole="header">
+            OUR JOURNEY
+          </Text>
+          <View>
+            {TIMELINE.map((item, i) => (
+              <View key={item.year} style={styles.timelineRow} accessible accessibilityLabel={`${item.year}. ${item.label}`}>
+                <Text variant="title" style={styles.year}>
+                  {item.year}
+                </Text>
+                <View style={styles.rail}>
+                  <View style={[styles.node, { borderColor: colors.accent, backgroundColor: colors.background }]} />
+                  {i < TIMELINE.length - 1 ? <View style={[styles.railLine, { backgroundColor: colors.border }]} /> : null}
+                </View>
+                <Text variant="body" color="secondary" style={styles.timelineLabel}>
+                  {item.label}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
 
-        <ArtDecoDivider label="OUR VALUES" style={styles.center} />
-        <View style={styles.values}>
-          {VALUES.map((value) => (
-            <Card key={value.title} variant="glass" style={styles.valueCard}>
-              <value.icon size={IconSize.lg} color={colors.accent} strokeWidth={1.5} />
-              <Text variant="bodyStrong" style={styles.valueTitle}>
-                {value.title}
-              </Text>
-              <Text variant="caption" color="secondary">
-                {value.body}
-              </Text>
-            </Card>
-          ))}
+        <View style={[styles.section, styles.ruled, { borderTopColor: colors.divider }]}>
+          <Text variant="overline" color="accent" accessibilityRole="header">
+            OUR VALUES
+          </Text>
+          <View style={[styles.values, { borderColor: colors.border }]}>
+            {VALUES.map((value, i) => (
+              <View
+                key={value.title}
+                style={[
+                  styles.valueCell,
+                  {
+                    borderColor: colors.border,
+                    borderRightWidth: i % 2 === 0 ? StyleSheet.hairlineWidth : 0,
+                    borderBottomWidth: i < 2 ? StyleSheet.hairlineWidth : 0,
+                  },
+                ]}
+              >
+                <value.icon size={20} color={colors.accent} strokeWidth={1.25} />
+                <Text variant="bodyStrong">{value.title}</Text>
+                <Text variant="caption" color="secondary">
+                  {value.body}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
       </ScrollView>
+
+      {/* Back control floats over the opener */}
+      <View style={styles.headerHost} pointerEvents="box-none">
+        <StackHeader transparent />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingBottom: Spacing.giant },
-  hero: { height: 360, justifyContent: 'center', alignItems: 'center' },
-  heroContent: { alignItems: 'center', gap: Spacing.sm },
-  heroTitle: { letterSpacing: 2 },
-  section: { paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.xxl },
-  story: { textAlign: 'center' },
-  center: { alignSelf: 'center', marginTop: Spacing.xxxl },
-  timeline: { paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.xl, gap: Spacing.lg },
-  timelineRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg },
-  year: { width: 64 },
-  timelineLine: { width: 2, alignSelf: 'stretch' },
-  timelineLabel: { flex: 1 },
-  values: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.lg, paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.xl },
-  valueCard: { flexGrow: 1, flexBasis: '44%', gap: Spacing.sm, borderRadius: Radius.lg },
-  valueTitle: { marginTop: Spacing.xs },
+  headerHost: { position: 'absolute', top: 0, left: 0, right: 0 },
+  hero: { justifyContent: 'flex-end', backgroundColor: Palette.richBlack, overflow: 'hidden' },
+  heroContent: { paddingHorizontal: Layout.screenPadding, paddingBottom: Spacing.huge, gap: Spacing.sm },
+  heroRule: { width: 32, height: 1, backgroundColor: Palette.antiqueGold, marginTop: Spacing.sm },
+  section: { paddingHorizontal: Layout.screenPadding, paddingVertical: Spacing.xxxl, gap: Spacing.xl },
+  ruled: { borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: Layout.screenPadding, paddingHorizontal: 0 },
+  lede: { fontSize: 26, lineHeight: 34 },
+  story: { lineHeight: 26 },
+  timelineRow: { flexDirection: 'row', gap: Spacing.md },
+  year: { width: 58, fontSize: 18, lineHeight: 22 },
+  rail: { width: 14, alignItems: 'center' },
+  node: { width: 9, height: 9, borderRadius: 5, borderWidth: 1, marginTop: 6 },
+  railLine: { width: StyleSheet.hairlineWidth * 2, flex: 1, marginVertical: 4 },
+  timelineLabel: { flex: 1, paddingBottom: Spacing.xl },
+  values: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: StyleSheet.hairlineWidth, borderRadius: 4 },
+  valueCell: { width: '50%', padding: Spacing.lg, gap: Spacing.sm },
 });
