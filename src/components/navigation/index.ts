@@ -1,1 +1,1 @@
-export { ArtDecoTabBar } from './ArtDecoTabBar';
+export { ArtDecoTabBar, useTabBarHeight } from './ArtDecoTabBar';

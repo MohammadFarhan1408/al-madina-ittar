@@ -568,6 +568,6 @@ const styles = StyleSheet.create({
   addedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, minHeight: 20 },
   addedTick: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
-  secondaryBtn: { flex: 0.8, paddingHorizontal: Spacing.md },
-  addBtn: { flex: 1, paddingHorizontal: Spacing.lg },
+  secondaryBtn: { flex: 0.8, alignSelf: 'center', paddingHorizontal: Spacing.md },
+  addBtn: { flex: 1, alignSelf: 'center', paddingHorizontal: Spacing.lg },
 });

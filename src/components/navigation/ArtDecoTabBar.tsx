@@ -76,6 +76,15 @@ const ICON_IDLE = 'rgba(243, 238, 227, 0.62)'; // ≈ 7:1 on the capsule
 const PILL = Palette.ivoryText;
 const PILL_INK = Palette.ink;
 
+/**
+ * Total vertical space the floating bar occupies (capsule + its bottom offset). Screens
+ * that pin their own footer above the bar (Cart) use this to sit exactly on top of it.
+ */
+export function useTabBarHeight() {
+  const insets = useSafeAreaInsets();
+  return BAR_H + Math.max(insets.bottom - Spacing.xs, Spacing.md);
+}
+
 function TabItem({
   routeName,
   focused,
