@@ -23,7 +23,8 @@ export const paymentReturnUrl = () => Linking.createURL('payment-return');
 
 /** Resolves when the customer returns via the deep link or dismisses the sheet. */
 export const openCheckoutUrl = async (url: string) => {
-  await WebBrowser.openAuthSessionAsync(url, paymentReturnUrl());
+  // preferEphemeralSession: iOS skips the "Wants to Use checkout.stripe.com to Sign In" prompt
+  await WebBrowser.openAuthSessionAsync(url, paymentReturnUrl(), { preferEphemeralSession: true });
 };
 
 /** Opens the order's Stripe Checkout if it has one; resolves false when there is none. */
