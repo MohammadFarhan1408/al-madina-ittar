@@ -1,8 +1,9 @@
 /**
- * CategoryRail — horizontally scrolling list of category medallions with skeletons.
+ * CategoryRail — scent-family medallions in a horizontal rail, with matching skeletons.
+ * Hidden entirely if the request fails and nothing is cached (the page stays clean).
  */
 import { FlashList } from '@shopify/flash-list';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { CategoryCard } from '@/components/commerce';
 import { SectionHeader } from '@/components/layout';
@@ -11,22 +12,30 @@ import { Layout, Spacing } from '@/constants';
 import { useCategories } from '@/hooks/queries';
 import type { Category } from '@/types';
 
-export function CategoryRail({ onSelect }: { onSelect?: (category: Category) => void }) {
-  const { data, isLoading } = useCategories();
-  const size = Layout.categoryCardSize;
+const SIZE = Layout.categoryCardSize;
+
+export function CategoryRail({
+  onSelect,
+  onSeeAll,
+}: {
+  onSelect?: (category: Category) => void;
+  onSeeAll?: () => void;
+}) {
+  const { data, isLoading, isError } = useCategories();
+  if (!isLoading && (isError || !data?.length)) return null;
 
   return (
-    <View style={{ gap: Spacing.lg }}>
-      <View style={{ paddingHorizontal: Layout.screenPadding }}>
-        <SectionHeader eyebrow="Explore" title="Scent Families" />
+    <View style={styles.root}>
+      <View style={styles.pad}>
+        <SectionHeader eyebrow="Explore" title="Scent Families" actionLabel="All" onAction={onSeeAll} />
       </View>
 
       {isLoading ? (
-        <View style={{ flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Layout.screenPadding }}>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <View key={i} style={{ alignItems: 'center', gap: Spacing.sm }}>
-              <Skeleton width={size} height={size} radius={size / 2} />
-              <Skeleton width={56} height={10} />
+        <View style={[styles.row, styles.pad]}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <View key={i} style={styles.skeleton}>
+              <Skeleton width={SIZE} height={SIZE} radius={SIZE / 2} />
+              <Skeleton width={52} height={8} />
             </View>
           ))}
         </View>
@@ -36,11 +45,19 @@ export function CategoryRail({ onSelect }: { onSelect?: (category: Category) => 
           data={data}
           keyExtractor={(item) => item.id}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: Layout.screenPadding }}
-          ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
+          contentContainerStyle={styles.pad}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
           renderItem={({ item }) => <CategoryCard category={item} onPress={onSelect} />}
         />
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { gap: Spacing.xl },
+  pad: { paddingHorizontal: Layout.screenPadding },
+  row: { flexDirection: 'row', gap: Spacing.xl },
+  skeleton: { alignItems: 'center', gap: Spacing.md },
+  sep: { width: Spacing.xl },
+});

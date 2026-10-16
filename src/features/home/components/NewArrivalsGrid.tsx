@@ -1,8 +1,9 @@
 /**
- * NewArrivalsGrid — responsive wrapped grid of ProductCards (renders inside the Home
- * ScrollView, so it uses flex-wrap rather than a nested vertical list).
+ * NewArrivalsGrid — a responsive two-up (or more on tablets) grid of the latest pieces.
+ * Renders inside the Home ScrollView, so it uses flex-wrap rather than a nested list.
+ * Hidden on error/empty so the page never shows a hole.
  */
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { enter } from '@/animations';
@@ -13,22 +14,31 @@ import { useResponsive } from '@/core/platform';
 import { useNewArrivals } from '@/hooks/queries';
 import type { Product } from '@/types';
 
-const GAP = Spacing.lg;
+const COL_GAP = Spacing.md;
+const ROW_GAP = Spacing.xxl;
 const PAD = Layout.screenPadding;
 
-export function NewArrivalsGrid({ onSelect }: { onSelect?: (p: Product) => void }) {
+export function NewArrivalsGrid({
+  onSelect,
+  onSeeAll,
+}: {
+  onSelect?: (p: Product) => void;
+  onSeeAll?: () => void;
+}) {
   const { width, gridColumns } = useResponsive();
-  const { data, isLoading } = useNewArrivals();
-  const cardWidth = (width - PAD * 2 - GAP * (gridColumns - 1)) / gridColumns;
+  const { data, isLoading, isError } = useNewArrivals();
+  const cardWidth = Math.floor((width - PAD * 2 - COL_GAP * (gridColumns - 1)) / gridColumns);
+
+  if (!isLoading && (isError || !data?.length)) return null;
 
   return (
-    <View style={{ gap: Spacing.lg }}>
-      <View style={{ paddingHorizontal: PAD }}>
-        <SectionHeader eyebrow="Just In" title="New Arrivals" />
+    <View style={styles.root}>
+      <View style={styles.pad}>
+        <SectionHeader eyebrow="Just In" title="New Arrivals" actionLabel={onSeeAll ? 'View all' : undefined} onAction={onSeeAll} />
       </View>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingHorizontal: PAD }}>
+      <View style={[styles.grid, styles.pad]}>
         {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} width={cardWidth} />)
+          ? Array.from({ length: gridColumns * 2 }).map((_, i) => <ProductCardSkeleton key={i} width={cardWidth} />)
           : data?.map((product, index) => (
               <Animated.View key={product.id} entering={enter.staggered(index)} style={{ width: cardWidth }}>
                 <ProductCard product={product} width={cardWidth} onPress={onSelect} />
@@ -38,3 +48,9 @@ export function NewArrivalsGrid({ onSelect }: { onSelect?: (p: Product) => void 
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { gap: Spacing.xl },
+  pad: { paddingHorizontal: PAD },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: COL_GAP, rowGap: ROW_GAP },
+});
