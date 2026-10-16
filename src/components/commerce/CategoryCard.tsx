@@ -1,6 +1,6 @@
 /**
- * CategoryCard — circular image medallion with a gold ring and name label. Used in the
- * Home category rail. (The Shop screen uses CategoryTile for larger editorial cards.)
+ * CategoryCard — a scent-family medallion: circular photograph inside a hairline ring,
+ * tracked caps label beneath. Used in the Home rail. (Shop uses CategoryTile.)
  */
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -22,22 +22,24 @@ export function CategoryCard({
   category: Category;
   onPress?: (category: Category) => void;
 }) {
-  const { colors, shadows } = useTheme();
-  const { animatedStyle, onPressIn, onPressOut } = usePressScale(0.94);
+  const { colors } = useTheme();
+  const { animatedStyle, onPressIn, onPressOut } = usePressScale(0.95);
 
   return (
     <AnimatedPressable
       accessibilityRole="button"
-      accessibilityLabel={category.name}
+      accessibilityLabel={`${category.name}, ${category.productCount} fragrances`}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       onPress={() => onPress?.(category)}
       style={[styles.container, animatedStyle]}
     >
-      <View style={[styles.imageWrap, { borderColor: colors.accent }, shadows.glow]}>
-        <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" transition={250} />
+      <View style={[styles.ring, { borderColor: colors.border }]}>
+        <View style={[styles.imageWrap, { backgroundColor: colors.imageWell }]}>
+          <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" transition={250} />
+        </View>
       </View>
-      <Text variant="label" color="primary" uppercase numberOfLines={1} style={styles.label}>
+      <Text variant="overline" color="secondary" uppercase numberOfLines={1} align="center">
         {category.name}
       </Text>
     </AnimatedPressable>
@@ -45,15 +47,14 @@ export function CategoryCard({
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', width: SIZE, gap: Spacing.sm },
-  imageWrap: {
+  container: { alignItems: 'center', width: SIZE, gap: Spacing.md },
+  ring: {
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    borderWidth: 1.5,
+    borderWidth: 1,
     padding: 4,
-    overflow: 'hidden',
   },
-  image: { width: '100%', height: '100%', borderRadius: SIZE / 2 },
-  label: { letterSpacing: 1 },
+  imageWrap: { flex: 1, borderRadius: SIZE / 2, overflow: 'hidden' },
+  image: { width: '100%', height: '100%' },
 });

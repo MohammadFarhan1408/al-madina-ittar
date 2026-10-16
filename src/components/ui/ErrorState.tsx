@@ -2,9 +2,10 @@
  * ErrorState — recoverable error with a Retry action. Pair with EmptyState (no data)
  * and Skeleton (loading) so every data screen has all three states.
  */
-import { AlertCircle } from 'lucide-react-native';
+import { CloudOff } from 'lucide-react-native';
 import { StyleSheet, type ViewStyle } from 'react-native';
 
+import { IconSize } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { EmptyState } from './EmptyState';
 
@@ -25,7 +26,7 @@ export function ErrorState({
   return (
     <EmptyState
       style={StyleSheet.flatten([style])}
-      icon={<AlertCircle size={36} color={colors.accent} />}
+      icon={<CloudOff size={IconSize.lg} color={colors.text.secondary} strokeWidth={1.25} />}
       title={title}
       message={message}
       actionLabel={onRetry ? 'Try again' : undefined}

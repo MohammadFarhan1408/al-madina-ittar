@@ -1,45 +1,81 @@
 /**
- * ReviewCard — a customer testimonial with avatar, rating, title and body.
+ * ReviewCard — a customer testimonial set like a pull-quote: gold rating, serif title,
+ * body, then the author line with a verified mark.
  */
-import { BadgeCheck } from 'lucide-react-native';
+import { BadgeCheck, Star } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 
-import { Avatar, Card, Rating, Text } from '@/components/ui';
-import { IconSize, Spacing } from '@/constants';
+import { Avatar, Text } from '@/components/ui';
+import { Radius, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import type { Review } from '@/types';
 
 export function ReviewCard({ review, width }: { review: Review; width?: number }) {
   const { colors } = useTheme();
+  const stars = Math.round(review.rating);
   return (
-    <Card variant="glass" style={width ? { width } : undefined}>
-      <View style={styles.header}>
-        <Avatar uri={review.avatar} name={review.author} size="md" />
-        <View style={styles.headerText}>
-          <View style={styles.nameRow}>
-            <Text variant="bodyStrong" numberOfLines={1}>
-              {review.author}
-            </Text>
-            {review.verified ? (
-              <BadgeCheck size={IconSize.xs} color={colors.accent} strokeWidth={2} />
-            ) : null}
-          </View>
-          <Rating value={review.rating} />
-        </View>
+    <View
+      accessible
+      accessibilityLabel={`${review.rating} out of 5 stars. ${review.title}. ${review.body}. By ${review.author}${review.verified ? ', verified buyer' : ''}`}
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        width ? { width } : null,
+      ]}
+    >
+      <View style={styles.stars}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            size={11}
+            color={colors.accent}
+            fill={i < stars ? colors.accent : 'transparent'}
+            strokeWidth={1.25}
+          />
+        ))}
       </View>
-      <Text variant="bodyStrong" style={styles.title}>
+      <Text variant="title" numberOfLines={2} style={styles.title}>
         {review.title}
       </Text>
-      <Text variant="body" color="secondary" numberOfLines={4}>
+      <Text variant="body" color="secondary" numberOfLines={4} style={styles.body}>
         {review.body}
       </Text>
-    </Card>
+      <View style={[styles.author, { borderTopColor: colors.divider }]}>
+        <Avatar uri={review.avatar} name={review.author} size="sm" />
+        <Text variant="caption" color="primary" numberOfLines={1} style={styles.name}>
+          {review.author}
+        </Text>
+        {review.verified ? (
+          <View style={styles.verified}>
+            <BadgeCheck size={12} color={colors.accent} strokeWidth={1.75} />
+            <Text variant="overline" color="muted">
+              VERIFIED
+            </Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  headerText: { flex: 1, gap: 2 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  title: { marginTop: Spacing.md, marginBottom: Spacing.xs },
+  card: {
+    borderRadius: Radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: Spacing.xl,
+    gap: Spacing.md,
+    minHeight: 236,
+  },
+  stars: { flexDirection: 'row', gap: 3 },
+  title: { fontSize: 18, lineHeight: 24 },
+  body: { flex: 1 },
+  author: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingTop: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  name: { flex: 1 },
+  verified: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });

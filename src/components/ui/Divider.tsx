@@ -1,5 +1,5 @@
 /** Divider — hairline separator. */
-import { View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/core/theme';
 
@@ -12,13 +12,14 @@ export type DividerProps = {
 
 export function Divider({ vertical = false, spacing = 0, color, style }: DividerProps) {
   const { colors } = useTheme();
+  const w = StyleSheet.hairlineWidth;
   return (
     <View
       style={[
         vertical
-          ? { width: 1, alignSelf: 'stretch', marginHorizontal: spacing }
-          : { height: 1, alignSelf: 'stretch', marginVertical: spacing },
-        { backgroundColor: color ?? colors.border },
+          ? { width: w, alignSelf: 'stretch', marginHorizontal: spacing }
+          : { height: w, alignSelf: 'stretch', marginVertical: spacing },
+        { backgroundColor: color ?? colors.divider },
         style,
       ]}
     />

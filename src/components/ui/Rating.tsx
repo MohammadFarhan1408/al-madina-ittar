@@ -17,10 +17,11 @@ export type RatingProps = {
 
 export function Rating({ value, reviewCount, size = IconSize.xs }: RatingProps) {
   const { colors } = useTheme();
+  const label = `Rated ${formatRating(value)} out of 5${typeof reviewCount === 'number' ? `, ${reviewCount} reviews` : ''}`;
   return (
-    <View style={styles.row}>
-      <Star size={size} color={colors.accent} fill={colors.accent} strokeWidth={0} />
-      <Text variant="caption" color="secondary">
+    <View style={styles.row} accessible accessibilityLabel={label}>
+      <Star size={size - 2} color={colors.accent} fill={colors.accent} strokeWidth={0} />
+      <Text variant="caption" color="muted">
         {formatRating(value)}
         {typeof reviewCount === 'number' ? ` (${formatReviewCount(reviewCount)})` : ''}
       </Text>

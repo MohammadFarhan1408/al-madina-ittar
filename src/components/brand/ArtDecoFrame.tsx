@@ -17,7 +17,7 @@ export type ArtDecoFrameProps = {
 export function ArtDecoFrame({
   color,
   inset = Spacing.md,
-  cornerLength = 28,
+  cornerLength = 18,
   style,
 }: ArtDecoFrameProps) {
   const { colors } = useTheme();
@@ -36,9 +36,9 @@ export function ArtDecoFrame({
 }
 
 const styles = StyleSheet.create({
-  corner: { position: 'absolute', borderRadius: Radius.xs },
-  tl: { top: 0, left: 0, borderTopWidth: 1.5, borderLeftWidth: 1.5 },
-  tr: { top: 0, right: 0, borderTopWidth: 1.5, borderRightWidth: 1.5 },
-  bl: { bottom: 0, left: 0, borderBottomWidth: 1.5, borderLeftWidth: 1.5 },
-  br: { bottom: 0, right: 0, borderBottomWidth: 1.5, borderRightWidth: 1.5 },
+  corner: { position: 'absolute', borderRadius: Radius.none, opacity: 0.7 },
+  tl: { top: 0, left: 0, borderTopWidth: 1, borderLeftWidth: 1 },
+  tr: { top: 0, right: 0, borderTopWidth: 1, borderRightWidth: 1 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: 1, borderLeftWidth: 1 },
+  br: { bottom: 0, right: 0, borderBottomWidth: 1, borderRightWidth: 1 },
 });

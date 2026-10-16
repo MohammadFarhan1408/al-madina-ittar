@@ -31,7 +31,7 @@ export function Modal({ visible, onClose, children, dismissable = true }: ModalP
         <Animated.View
           entering={ZoomIn.springify().damping(18)}
           exiting={ZoomOut.duration(150)}
-          style={[styles.card, { backgroundColor: colors.surfaceElevated }, shadows.xl]}
+          style={[styles.card, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }, shadows.xl]}
         >
           {children}
         </Animated.View>
@@ -45,7 +45,8 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 420,
-    borderRadius: Radius.xl,
+    borderRadius: Radius.md,
     padding: Spacing.xxl,
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });

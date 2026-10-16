@@ -1,14 +1,16 @@
 /**
- * Badge — small status/label pill. Maps product badges & status tones to brand colors.
+ * Badge — small tracked-caps tag. Product badges sit on imagery, so they use a quiet
+ * ivory plate with ink text (legible on any photo) rather than saturated fills.
  */
 import { View, type ViewStyle } from 'react-native';
 
 import { Radius, Spacing } from '@/constants';
+import { Palette } from '@/constants/colors';
 import { useTheme } from '@/core/theme';
 import type { ProductBadge } from '@/types';
 import { Text } from './Text';
 
-export type BadgeTone = 'gold' | 'emerald' | 'burgundy' | 'neutral' | 'error';
+export type BadgeTone = 'gold' | 'emerald' | 'burgundy' | 'neutral' | 'error' | 'plate';
 
 export type BadgeProps = {
   label: string;
@@ -19,12 +21,13 @@ export type BadgeProps = {
 export function Badge({ label, tone = 'gold', style }: BadgeProps) {
   const { colors } = useTheme();
 
-  const toneMap: Record<BadgeTone, { bg: string; fg: string }> = {
-    gold: { bg: colors.accent, fg: colors.text.onAccent },
-    emerald: { bg: colors.emerald, fg: colors.text.inverse },
-    burgundy: { bg: colors.burgundy, fg: colors.text.inverse },
+  const toneMap: Record<BadgeTone, { bg: string; fg: string; border?: string }> = {
+    gold: { bg: colors.accentSoft, fg: colors.accent },
+    emerald: { bg: colors.success.soft, fg: colors.success.base },
+    burgundy: { bg: colors.error.soft, fg: colors.error.base },
     neutral: { bg: colors.surfaceSunken, fg: colors.text.secondary },
-    error: { bg: colors.error.base, fg: colors.text.inverse },
+    error: { bg: colors.error.soft, fg: colors.error.base },
+    plate: { bg: 'rgba(247, 243, 234, 0.92)', fg: Palette.ink },
   };
   const c = toneMap[tone];
 
@@ -35,27 +38,20 @@ export function Badge({ label, tone = 'gold', style }: BadgeProps) {
           backgroundColor: c.bg,
           borderRadius: Radius.xs,
           paddingHorizontal: Spacing.sm,
-          paddingVertical: Spacing.xxs,
+          paddingVertical: 3,
           alignSelf: 'flex-start',
         },
         style,
       ]}
     >
-      <Text variant="label" colorValue={c.fg} uppercase>
+      <Text variant="overline" colorValue={c.fg} uppercase style={{ letterSpacing: 1.6 }}>
         {label}
       </Text>
     </View>
   );
 }
 
-const PRODUCT_BADGE_TONE: Record<ProductBadge, BadgeTone> = {
-  new: 'emerald',
-  bestseller: 'gold',
-  limited: 'burgundy',
-  exclusive: 'gold',
-};
-
-/** Convenience badge driven by a Product's `badge` field. */
+/** Convenience badge driven by a Product's `badge` field (rendered over imagery). */
 export function ProductBadgeTag({ badge }: { badge: ProductBadge }) {
-  return <Badge label={badge} tone={PRODUCT_BADGE_TONE[badge]} />;
+  return <Badge label={badge} tone="plate" />;
 }

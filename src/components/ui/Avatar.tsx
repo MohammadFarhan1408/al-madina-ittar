@@ -45,12 +45,14 @@ export function Avatar({ uri, name, size = 'md' }: AvatarProps) {
         width: dimension,
         height: dimension,
         borderRadius: dimension / 2,
-        backgroundColor: colors.accentSoft,
+        backgroundColor: colors.surfaceElevated,
+        borderWidth: 1,
+        borderColor: colors.border,
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
-      <Text variant="subtitle" color="accent">
+      <Text variant="title" color="primary">
         {initials(name)}
       </Text>
     </View>

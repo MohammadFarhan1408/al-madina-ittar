@@ -1,13 +1,14 @@
 /**
- * Card — elevated surface container with brand radius & shadow. Variants:
- *  - solid (default): themed surface
+ * Card — a quiet surface container. Luxury surfaces separate with tone and a hairline,
+ * not heavy shadow. Variants:
+ *  - solid (default): themed surface + hairline border
  *  - glass: frosted GlassSurface
  *  - gradient: subtle surface gradient
  * Optionally pressable (adds press-scale).
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import { type ReactNode } from 'react';
-import { Pressable, View, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { usePressScale } from '@/animations';
@@ -24,27 +25,33 @@ export type CardProps = {
   variant?: CardVariant;
   elevation?: ShadowToken;
   padded?: boolean;
+  /** Hairline border. On by default — set false for borderless tonal panels. */
   bordered?: boolean;
   radius?: number;
   onPress?: () => void;
+  accessibilityLabel?: string;
   style?: ViewStyle;
 };
 
 export function Card({
   children,
   variant = 'solid',
-  elevation = 'sm',
+  elevation = 'none',
   padded = true,
-  bordered = false,
-  radius = Radius.lg,
+  bordered = true,
+  radius = Radius.sm,
   onPress,
+  accessibilityLabel,
   style,
 }: CardProps) {
   const { colors, shadows, spacing } = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = usePressScale(0.985);
 
-  const padding = padded ? spacing.lg : 0;
+  const padding = padded ? spacing.xl : 0;
   const outer: ViewStyle = { borderRadius: radius, ...shadows[elevation] };
+  const border = bordered
+    ? { borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border }
+    : null;
 
   const inner = (() => {
     if (variant === 'glass') {
@@ -60,27 +67,14 @@ export function Card({
           colors={colors.surfaceGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: radius,
-            padding,
-            borderWidth: bordered ? 1 : 0,
-            borderColor: colors.border,
-          }}
+          style={[{ borderRadius: radius, padding }, border]}
         >
           {children}
         </LinearGradient>
       );
     }
     return (
-      <View
-        style={{
-          backgroundColor: colors.surface,
-          borderRadius: radius,
-          padding,
-          borderWidth: bordered ? 1 : 0,
-          borderColor: colors.border,
-        }}
-      >
+      <View style={[{ backgroundColor: colors.surface, borderRadius: radius, padding }, border]}>
         {children}
       </View>
     );
@@ -90,6 +84,7 @@ export function Card({
     return (
       <AnimatedPressable
         accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={onPress}

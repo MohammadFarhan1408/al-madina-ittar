@@ -40,21 +40,24 @@ function ToastItem({ toast }: { toast: ToastConfig }) {
   return (
     <Animated.View entering={FadeInUp.springify().damping(18)} exiting={FadeOutUp.duration(200)}>
       <Pressable
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+        accessibilityHint="Tap to dismiss"
         onPress={() => dismiss(toast.id)}
         style={[
           styles.toast,
-          { backgroundColor: colors.surfaceElevated, borderLeftColor: accent[toast.variant] },
+          { backgroundColor: colors.surfaceElevated, borderColor: colors.border },
           shadows.lg,
         ]}
       >
-        <Icon size={IconSize.md} color={accent[toast.variant]} strokeWidth={1.75} />
+        <Icon size={IconSize.sm} color={accent[toast.variant]} strokeWidth={1.5} />
         <View style={styles.body}>
           {toast.title ? (
             <Text variant="bodyStrong" numberOfLines={1}>
               {toast.title}
             </Text>
           ) : null}
-          <Text variant="caption" color="secondary" numberOfLines={2}>
+          <Text variant="caption" color={toast.title ? 'secondary' : 'primary'} numberOfLines={2}>
             {toast.message}
           </Text>
         </View>
@@ -90,9 +93,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    padding: Spacing.lg,
-    borderRadius: Radius.md,
-    borderLeftWidth: 3,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   body: { flex: 1, gap: 2 },
 });

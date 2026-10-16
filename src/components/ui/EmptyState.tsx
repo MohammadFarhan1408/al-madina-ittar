@@ -1,13 +1,15 @@
 /**
- * EmptyState — centered icon + message for empty lists, errors, and "coming soon".
+ * EmptyState — centered, editorial message for empty lists, errors and gated content:
+ * a hairline-ringed icon, serif title, quiet body and one action.
  */
-import { type ReactNode } from "react";
-import { StyleSheet, View, type ViewStyle } from "react-native";
+import { type ReactNode } from 'react';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { Spacing } from "@/constants";
-import { useTheme } from "@/core/theme";
-import { Button } from "./Button";
-import { Text } from "./Text";
+import { Spacing } from '@/constants';
+import { useTheme } from '@/core/theme';
+import { Button, type ButtonVariant } from './Button';
+import { Text } from './Text';
 
 export type EmptyStateProps = {
   icon?: ReactNode;
@@ -15,6 +17,8 @@ export type EmptyStateProps = {
   message?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Visual weight of the action. Defaults to outline. */
+  actionVariant?: ButtonVariant;
   style?: ViewStyle;
 };
 
@@ -24,58 +28,54 @@ export function EmptyState({
   message,
   actionLabel,
   onAction,
+  actionVariant = 'outline',
   style,
 }: EmptyStateProps) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.container, style]}>
+    <Animated.View entering={FadeIn.duration(320)} style={[styles.container, style]}>
       {icon ? (
-        <View style={[styles.iconWrap, { backgroundColor: colors.accentSoft }]}>
-          {icon}
-        </View>
+        <View style={[styles.iconWrap, { borderColor: colors.border }]}>{icon}</View>
       ) : null}
       <Text variant="title" align="center">
         {title}
       </Text>
       {message ? (
-        <Text
-          variant="body"
-          color="secondary"
-          align="center"
-          style={styles.message}
-        >
+        <Text variant="body" color="secondary" align="center" style={styles.message}>
           {message}
         </Text>
       ) : null}
       {actionLabel && onAction ? (
         <Button
           label={actionLabel}
-          variant="outline"
+          variant={actionVariant}
           fullWidth={false}
           onPress={onAction}
           style={styles.action}
         />
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: Spacing.xxxl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xxxl,
+    paddingVertical: Spacing.giant,
     gap: Spacing.md,
   },
   iconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.sm,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
   },
-  message: { maxWidth: 280 },
-  action: { marginTop: Spacing.lg, alignSelf: "center" },
+  message: { maxWidth: 300 },
+  action: { marginTop: Spacing.lg, alignSelf: 'center' },
 });

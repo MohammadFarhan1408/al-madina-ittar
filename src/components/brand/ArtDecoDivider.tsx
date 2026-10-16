@@ -43,17 +43,17 @@ function Diamond({ tint }: { tint: string }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
   rowWide: { alignSelf: 'stretch' },
-  line: { flex: 1, height: StyleSheet.hairlineWidth * 2, opacity: 0.7 },
+  line: { flex: 1, height: StyleSheet.hairlineWidth, opacity: 0.55 },
   label: { marginHorizontal: Spacing.xs },
   diamondOuter: {
-    width: 14,
-    height: 14,
-    borderWidth: 1,
+    width: 7,
+    height: 7,
+    borderWidth: StyleSheet.hairlineWidth * 2,
     transform: [{ rotate: '45deg' }],
     alignItems: 'center',
     justifyContent: 'center',
   },
-  diamondInner: { width: 6, height: 6 },
+  diamondInner: { width: 0, height: 0 },
 });
