@@ -1,12 +1,12 @@
 /**
- * MenuRow — a tappable settings/profile list row: leading icon medallion, title +
- * optional subtitle, and a trailing chevron (or custom right slot, e.g. a Switch).
+ * MenuRow — a tappable settings/profile list row: leading line icon, title + optional
+ * subtitle, and a trailing chevron (or custom right slot, e.g. a Switch). ≥ 56pt tall.
  */
 import { ChevronRight } from 'lucide-react-native';
 import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { IconSize, Radius, Spacing } from '@/constants';
+import { IconSize, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { Text } from './Text';
 
@@ -37,15 +37,11 @@ export function MenuRow({
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={subtitle ? `${title}, ${subtitle}` : title}
-      style={({ pressed }) => [styles.row, pressed && onPress ? { opacity: 0.6 } : null]}
+      style={({ pressed }) => [styles.row, pressed && onPress ? { opacity: 0.55 } : null]}
     >
-      {icon ? (
-        <View style={[styles.iconWrap, { backgroundColor: danger ? colors.error.soft : colors.accentSoft }]}>
-          {icon}
-        </View>
-      ) : null}
+      {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
       <View style={styles.body}>
-        <Text variant="bodyStrong" colorValue={danger ? colors.error.base : colors.text.primary}>
+        <Text variant="body" colorValue={danger ? colors.error.base : colors.text.primary}>
           {title}
         </Text>
         {subtitle ? (
@@ -54,9 +50,10 @@ export function MenuRow({
           </Text>
         ) : null}
       </View>
-      {right ?? (showChevron && onPress ? (
-        <ChevronRight size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />
-      ) : null)}
+      {right ??
+        (showChevron && onPress ? (
+          <ChevronRight size={IconSize.sm} color={colors.text.muted} strokeWidth={1.5} />
+        ) : null)}
     </Pressable>
   );
 }
@@ -66,14 +63,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.lg,
+    minHeight: 56,
     paddingVertical: Spacing.md,
   },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: Radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  iconWrap: { width: 24, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
 });

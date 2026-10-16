@@ -17,15 +17,16 @@ export const Breakpoint = {
 
 export const Layout = {
   screenPadding: 20,
-  sectionGap: 32,
+  sectionGap: 48,
   maxContentWidth: 1000,
-  tabBarHeight: 64,
+  tabBarHeight: 60,
   /** Bottom padding tab screens add so content clears the floating glass tab bar. */
   tabBarClearance: 112,
   headerHeight: 56,
   heroHeight: 460,
-  productCardImageRatio: 0.82,
-  categoryCardSize: 96,
+  /** Width ÷ height of product imagery (4:5 portrait, editorial). */
+  productCardImageRatio: 0.8,
+  categoryCardSize: 88,
   bottomSheetHandleWidth: 44,
 } as const;
 

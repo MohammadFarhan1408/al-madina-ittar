@@ -16,8 +16,8 @@ export type DotIndicatorProps = {
 function Dot({ active }: { active: boolean }) {
   const { colors } = useTheme();
   const animatedStyle = useAnimatedStyle(() => ({
-    width: withTiming(active ? 22 : 7),
-    backgroundColor: withTiming(active ? colors.accent : colors.border),
+    width: withTiming(active ? 20 : 6),
+    backgroundColor: withTiming(active ? colors.text.primary : colors.borderStrong),
   }));
   return <Animated.View style={[styles.dot, animatedStyle]} />;
 }
@@ -33,6 +33,6 @@ export function DotIndicator({ count, activeIndex, style }: DotIndicatorProps) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  dot: { height: 7, borderRadius: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  dot: { height: 2, borderRadius: 1 },
 });

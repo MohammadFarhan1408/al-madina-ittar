@@ -20,17 +20,18 @@ export function SocialButton({ icon, label, onPress }: SocialButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={() => {
         haptics.light();
         onPress?.();
       }}
       style={({ pressed }) => [
         styles.btn,
-        { borderColor: colors.border, backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+        { borderColor: colors.borderStrong, backgroundColor: 'transparent', opacity: pressed ? 0.6 : 1 },
       ]}
     >
       {icon}
-      <Text variant="bodyStrong">{label}</Text>
+      <Text variant="button" uppercase>{label}</Text>
     </Pressable>
   );
 }
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: ControlHeight.md,
     borderWidth: 1,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.xs,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

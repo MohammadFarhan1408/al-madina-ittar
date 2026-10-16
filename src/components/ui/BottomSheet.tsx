@@ -3,7 +3,7 @@
  * down to dismiss. Controlled via `visible` / `onClose`.
  */
 import { useEffect, type ReactNode } from 'react';
-import { Modal, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolate,
@@ -74,7 +74,12 @@ export function BottomSheet({
     <Modal visible={visible} transparent statusBarTranslucent animationType="fade" onRequestClose={close}>
       <View style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.scrim }, backdropStyle]}>
-          <Animated.View style={StyleSheet.absoluteFill} onTouchEnd={close} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={close}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          />
         </Animated.View>
         <GestureDetector gesture={pan}>
           <Animated.View
@@ -89,7 +94,7 @@ export function BottomSheet({
               sheetStyle,
             ]}
           >
-            <View style={[styles.handle, { backgroundColor: colors.borderStrong }]} />
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
             {children}
           </Animated.View>
         </GestureDetector>
@@ -101,14 +106,14 @@ export function BottomSheet({
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.xxl,
-    borderTopRightRadius: Radius.xxl,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     paddingHorizontal: Spacing.xxl,
     paddingTop: Spacing.md,
   },
   handle: {
-    width: 44,
-    height: 5,
+    width: 36,
+    height: 4,
     borderRadius: 999,
     alignSelf: 'center',
     marginBottom: Spacing.lg,

@@ -1,14 +1,15 @@
 /**
- * Border radius scale. Art Deco favours crisp geometry, so radii stay restrained.
+ * Border radius scale. Couture geometry: controls are near-square (xs), product
+ * imagery and cards stay crisp (sm/md), only sheets and the tab bar soften (xl+).
  */
 export const Radius = {
   none: 0,
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 28,
+  xs: 2,
+  sm: 4,
+  md: 8,
+  lg: 12,
+  xl: 16,
+  xxl: 24,
   pill: 999,
   round: 9999,
 } as const;

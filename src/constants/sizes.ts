@@ -10,10 +10,11 @@ export const IconSize = {
   xxl: 40,
 } as const;
 
+/** All interactive heights are ≥ 44pt (Apple HIG / WCAG 2.5.5 target size). */
 export const ControlHeight = {
-  sm: 36,
-  md: 44,
-  lg: 52,
+  sm: 44,
+  md: 50,
+  lg: 54,
   xl: 58,
 } as const;
 
@@ -27,6 +28,7 @@ export const AvatarSize = {
 export const HitSlop = { top: 8, bottom: 8, left: 8, right: 8 } as const;
 
 export const StrokeWidth = {
+  hair: 1.25,
   thin: 1.5,
   regular: 1.75,
   bold: 2,

@@ -15,7 +15,7 @@ export type ArtDecoPatternProps = {
   style?: ViewStyle;
 };
 
-export function ArtDecoPattern({ color, opacity = 0.06, size = 80, style }: ArtDecoPatternProps) {
+export function ArtDecoPattern({ color, opacity = 0.035, size = 80, style }: ArtDecoPatternProps) {
   const { colors } = useTheme();
   const tint = color ?? colors.accent;
 

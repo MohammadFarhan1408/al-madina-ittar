@@ -1,30 +1,38 @@
 /**
- * Light theme — "Ivory Atelier". Warm paper grounds with gold & jewel accents.
+ * Light theme — "Ivory Atelier". Warm paper grounds, ink type, gold ink accents.
+ *
+ * Contrast (WCAG 2.1, on background #F7F4EE / sunken #ECE6DA):
+ *   text.primary 17.2 · text.secondary 7.2 · text.muted 5.5 / 4.9
+ *   accent (gold ink) 5.1 / 4.5 · error 6.3 · success 5.5
  */
 import { Palette } from '@/constants/colors';
 import type { SemanticColors } from './types';
 
 export const lightColors: SemanticColors = {
-  background: Palette.pearl,
-  backgroundAlt: Palette.ivory,
-  surface: Palette.white,
+  background: Palette.paper,
+  backgroundAlt: Palette.parchment,
+  surface: Palette.pearl,
   surfaceElevated: Palette.white,
-  surfaceSunken: Palette.ivoryDim,
+  surfaceSunken: Palette.linen,
+  imageWell: Palette.parchment,
 
-  border: Palette.sand,
-  borderStrong: Palette.stone,
+  border: 'rgba(18, 17, 15, 0.09)',
+  borderStrong: 'rgba(18, 17, 15, 0.5)',
 
   text: {
-    primary: Palette.richBlack,
+    primary: Palette.ink,
     secondary: Palette.slate,
-    muted: Palette.ash,
-    inverse: Palette.ivory,
+    muted: Palette.dusk,
+    inverse: Palette.ivoryText,
     onAccent: Palette.richBlack,
   },
 
-  accent: Palette.antiqueGold,
-  accentSoft: Palette.champagneSoft,
-  accentStrong: Palette.bronze,
+  cta: Palette.ink,
+  onCta: Palette.ivoryText,
+
+  accent: Palette.goldInk,
+  accentSoft: 'rgba(200, 162, 75, 0.14)',
+  accentStrong: Palette.bronzeDeep,
 
   emerald: Palette.emerald,
   burgundy: Palette.burgundy,
@@ -36,26 +44,27 @@ export const lightColors: SemanticColors = {
 
   overlay: Palette.overlayLight,
   scrim: Palette.scrim,
-  skeletonBase: Palette.ivoryDim,
-  skeletonHighlight: Palette.pearl,
+  skeletonBase: Palette.linen,
+  skeletonHighlight: Palette.parchment,
 
-  divider: 'rgba(154, 123, 51, 0.18)',
+  divider: 'rgba(18, 17, 15, 0.08)',
+  focus: Palette.goldInk,
 
   glassTint: Palette.glassLight,
   glassBorder: Palette.glassLightBorder,
   goldGlow: Palette.goldGlow,
 
-  tabBar: 'rgba(255, 255, 255, 0.92)',
-  tabBarActive: Palette.antiqueGold,
-  tabBarInactive: Palette.ash,
+  tabBar: 'rgba(251, 249, 245, 0.96)',
+  tabBarActive: Palette.ink,
+  tabBarInactive: Palette.dusk,
 
-  heroGradient: [Palette.richBlack, Palette.smoke, Palette.bronze],
-  heroOverlay: ['rgba(11,11,11,0.05)', 'rgba(11,11,11,0.45)', 'rgba(11,11,11,0.85)'],
-  goldGradient: [Palette.champagne, Palette.antiqueGold, Palette.bronze],
-  noirGradient: [Palette.smoke, Palette.richBlack],
+  heroGradient: [Palette.ink, Palette.graphite],
+  heroOverlay: ['rgba(11,11,11,0.05)', 'rgba(11,11,11,0.45)', 'rgba(11,11,11,0.88)'],
+  goldGradient: [Palette.giltLight, Palette.antiqueGold, Palette.giltDeep],
+  noirGradient: [Palette.graphite, Palette.richBlack],
   emeraldGradient: [Palette.emeraldLight, Palette.emerald],
-  surfaceGradient: [Palette.white, Palette.ivory],
+  surfaceGradient: [Palette.white, Palette.paper],
 
-  shadowColor: 'rgba(90, 70, 20, 0.35)',
+  shadowColor: 'rgba(40, 30, 10, 0.22)',
   glowColor: Palette.goldGlow,
 };

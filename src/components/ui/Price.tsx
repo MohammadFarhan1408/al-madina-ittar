@@ -1,5 +1,6 @@
 /**
- * Price — formatted price with optional original (strikethrough) and discount tag.
+ * Price — formatted price with optional original (strikethrough) and discount. Prices
+ * read in the primary ink color; gold is not used for money (it reads as a promo).
  */
 import { StyleSheet, View } from 'react-native';
 
@@ -29,7 +30,7 @@ export function Price({
 
   return (
     <View style={styles.row}>
-      <Text variant={variant} color="accent">
+      <Text variant={variant} color="primary">
         {formatPrice(amount, currency)}
       </Text>
       {originalAmount && discount ? (
@@ -37,13 +38,13 @@ export function Price({
           variant="caption"
           color="muted"
           style={styles.struck}
-          colorValue={colors.text.muted}
+          accessibilityLabel={`was ${formatPrice(originalAmount, currency)}`}
         >
           {formatPrice(originalAmount, currency)}
         </Text>
       ) : null}
       {showDiscount && discount ? (
-        <Text variant="label" colorValue={colors.success.base}>
+        <Text variant="label" colorValue={colors.accent}>
           −{discount}%
         </Text>
       ) : null}
@@ -52,6 +53,6 @@ export function Price({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.sm, flexWrap: 'wrap' },
   struck: { textDecorationLine: 'line-through' },
 });

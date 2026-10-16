@@ -1,8 +1,14 @@
 /**
- * Typography system for the Al Madina luxury brand.
+ * Typography system for Al Madina Ittar.
  *
- * Display/Heading: Playfair Display (high-contrast Didone serif — Art Deco elegance).
- * Body/UI:         Jost (geometric sans, Futura lineage — 1920s geometry).
+ * Brand:   Fugi — the house display face (same file as the web storefront). Reserved
+ *          for the largest moments: hero titles, the splash and the wordmark.
+ * Display: Playfair Display — a high-contrast serif for screen and section titles.
+ * Body/UI: Jost — a geometric sans for reading copy, prices and tracked-out labels.
+ *
+ * Hierarchy rule: one serif title per block, everything else in Jost. Tracked
+ * uppercase (overline/label/button) does the "luxury" work, so gold is not needed
+ * to signal importance.
  *
  * Font family keys MUST match the names registered in the root font loader
  * (`src/app/_layout.tsx`). Role presets below are the ONLY approved text styles —
@@ -25,6 +31,7 @@ export const FontFamily = {
 } as const;
 
 export const FontSize = {
+  xxs: 10,
   xs: 11,
   sm: 13,
   md: 15,
@@ -32,8 +39,8 @@ export const FontSize = {
   xl: 20,
   xxl: 24,
   xxxl: 30,
-  display: 38,
-  hero: 48,
+  display: 36,
+  hero: 46,
 } as const;
 
 export const LineHeight = {
@@ -47,10 +54,10 @@ export const LetterSpacing = {
   tighter: -0.5,
   tight: -0.25,
   normal: 0,
-  wide: 0.5,
-  wider: 1,
+  wide: 0.4,
+  wider: 1.2,
   widest: 2,
-  luxe: 3,
+  luxe: 2.6,
 } as const;
 
 type TypePreset = Pick<
@@ -74,21 +81,26 @@ const preset = (
  * Role-based presets. Spread onto `<Text style={[Typography.heading, ...]} />`.
  */
 export const Typography = {
+  /** Fugi — hero banners and splash only. */
   hero: preset(FontFamily.brand, FontSize.hero, LineHeight.tight, LetterSpacing.normal),
+  /** Fugi — large page statements (Shop, About). */
   display: preset(FontFamily.brand, FontSize.display, LineHeight.tight, LetterSpacing.normal),
-  displayItalic: preset(FontFamily.displayItalic, FontSize.xxxl, LineHeight.snug, LetterSpacing.tight),
-  heading: preset(FontFamily.display, FontSize.xxxl, LineHeight.snug, LetterSpacing.wide),
-  title: preset(FontFamily.displayMedium, FontSize.xxl, LineHeight.snug, LetterSpacing.normal),
+  displayItalic: preset(FontFamily.displayItalic, FontSize.xxl, LineHeight.snug, LetterSpacing.tight),
+  /** Serif page title. */
+  heading: preset(FontFamily.displayMedium, FontSize.xxxl, LineHeight.snug, LetterSpacing.tight),
+  /** Serif section / card title. */
+  title: preset(FontFamily.displayMedium, FontSize.xl, LineHeight.snug, LetterSpacing.normal),
   subtitle: preset(FontFamily.bodyMedium, FontSize.lg, LineHeight.normal, LetterSpacing.normal),
   body: preset(FontFamily.body, FontSize.md, LineHeight.relaxed, LetterSpacing.normal),
-  bodyStrong: preset(FontFamily.bodySemiBold, FontSize.md, LineHeight.relaxed, LetterSpacing.normal),
-  caption: preset(FontFamily.body, FontSize.sm, LineHeight.normal, LetterSpacing.wide),
+  bodyStrong: preset(FontFamily.bodyMedium, FontSize.md, LineHeight.relaxed, LetterSpacing.normal),
+  caption: preset(FontFamily.body, FontSize.sm, LineHeight.normal, LetterSpacing.normal),
+  /** Tracked uppercase UI label (chips, field labels, meta). */
   label: preset(FontFamily.bodyMedium, FontSize.xs, LineHeight.normal, LetterSpacing.wider),
-  button: preset(FontFamily.bodySemiBold, FontSize.md, LineHeight.tight, LetterSpacing.wide),
-  // Decorative uppercase eyebrow used across luxury sections
-  overline: preset(FontFamily.bodyMedium, FontSize.xs, LineHeight.normal, LetterSpacing.luxe),
-  price: preset(FontFamily.displayMedium, FontSize.lg, LineHeight.tight, LetterSpacing.normal),
-  priceLarge: preset(FontFamily.display, FontSize.xxl, LineHeight.tight, LetterSpacing.normal),
+  button: preset(FontFamily.bodyMedium, FontSize.sm, LineHeight.tight, LetterSpacing.widest),
+  /** Decorative uppercase eyebrow used across sections. */
+  overline: preset(FontFamily.bodyMedium, FontSize.xxs, LineHeight.normal, LetterSpacing.luxe),
+  price: preset(FontFamily.body, FontSize.md, LineHeight.tight, LetterSpacing.wide),
+  priceLarge: preset(FontFamily.bodyLight, FontSize.xxl, LineHeight.tight, LetterSpacing.normal),
 } as const;
 
 export type TypographyVariant = keyof typeof Typography;

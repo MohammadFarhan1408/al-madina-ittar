@@ -1,6 +1,7 @@
 /**
- * StackHeader — the shared header for non-tab (stack) screens: back chevron, centered
- * serif title with optional overline, and a right-hand action slot. Respects safe-area.
+ * StackHeader — the shared header for non-tab (stack) screens: a quiet back control,
+ * centered serif title with optional tracked eyebrow, and a right-hand action slot.
+ * Solid by default (hairline bottom rule); `transparent` floats it over imagery.
  */
 import { ChevronLeft } from 'lucide-react-native';
 import { type ReactNode } from 'react';
@@ -38,6 +39,7 @@ export function StackHeader({
   const handleBack = () => {
     if (onBack) return onBack();
     if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
   };
 
   return (
@@ -45,7 +47,7 @@ export function StackHeader({
       style={[
         styles.root,
         {
-          paddingTop: insets.top + Spacing.sm,
+          paddingTop: insets.top + Spacing.xs,
           backgroundColor: transparent ? 'transparent' : colors.background,
           borderBottomColor: transparent ? 'transparent' : colors.divider,
         },
@@ -59,21 +61,29 @@ export function StackHeader({
             accessibilityLabel="Go back"
             hitSlop={HitSlop}
             onPress={handleBack}
-            style={[styles.backBtn, { borderColor: colors.glassBorder }]}
+            style={({ pressed }) => [
+              styles.backBtn,
+              transparent && { backgroundColor: 'rgba(11,11,11,0.38)' },
+              { opacity: pressed ? 0.5 : 1 },
+            ]}
           >
-            <ChevronLeft size={IconSize.md} color={colors.text.primary} strokeWidth={1.75} />
+            <ChevronLeft
+              size={IconSize.md}
+              color={transparent ? '#F3EEE3' : colors.text.primary}
+              strokeWidth={1.5}
+            />
           </Pressable>
         ) : null}
       </View>
 
-      <View style={styles.center}>
+      <View style={styles.center} accessibilityRole="header">
         {overline ? (
-          <Text variant="overline" color="accent">
+          <Text variant="overline" color="muted" uppercase numberOfLines={1}>
             {overline}
           </Text>
         ) : null}
         {title ? (
-          <Text variant="title" align="center" numberOfLines={1}>
+          <Text variant="title" align="center" numberOfLines={1} style={styles.title}>
             {title}
           </Text>
         ) : null}
@@ -88,19 +98,20 @@ const styles = StyleSheet.create({
   root: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: Spacing.md,
+    paddingHorizontal: Layout.screenPadding - Spacing.sm,
+    paddingBottom: Spacing.sm,
+    minHeight: Layout.headerHeight,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
-  side: { width: 44, justifyContent: 'center' },
+  side: { width: 48, justifyContent: 'center' },
   sideRight: { alignItems: 'flex-end' },
-  center: { flex: 1, alignItems: 'center', gap: 2 },
+  center: { flex: 1, alignItems: 'center', gap: 1 },
+  title: { fontSize: 18, lineHeight: 24 },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
