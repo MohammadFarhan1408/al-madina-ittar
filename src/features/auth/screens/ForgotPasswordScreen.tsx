@@ -2,22 +2,17 @@
  * ForgotPasswordScreen — requests a reset email. Backend always responds 200 whether
  * or not the account exists (anti-enumeration), so the success copy is generic.
  */
-import { Mail } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, FormField, Text } from '@/components/ui';
-import { IconSize, Spacing } from '@/constants';
-import { useTheme } from '@/core/theme';
+import { Button, FormField } from '@/components/ui';
 import { authService } from '@/services';
 import { toast } from '@/store';
 import { getErrorMessage, haptics, zodResolver } from '@/utils';
 import { forgotPasswordSchema, type ForgotPasswordValues } from '../schemas';
-import { AuthLayout } from '../components/AuthLayout';
+import { AuthLayout, AuthLink } from '../components/AuthLayout';
 
 export function ForgotPasswordScreen() {
-  const { colors } = useTheme();
   const router = useRouter();
   const { control, handleSubmit, formState } = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -34,11 +29,14 @@ export function ForgotPasswordScreen() {
       toast.error(getErrorMessage(err, 'Something went wrong. Please try again.'));
     }
   };
+  const submit = handleSubmit(onSubmit);
 
   return (
     <AuthLayout
-      title="Reset Password"
-      subtitle="Enter your email and we'll send you a reset link."
+      eyebrow="Account recovery"
+      title="Forgot password"
+      subtitle="Enter the email on your account and we’ll send you a reset code."
+      footer={<AuthLink label="Back to sign in" onPress={() => router.replace('/(auth)/login')} />}
     >
       <FormField
         control={control}
@@ -47,27 +45,13 @@ export function ForgotPasswordScreen() {
         placeholder="you@example.com"
         keyboardType="email-address"
         autoCapitalize="none"
+        autoCorrect={false}
         autoComplete="email"
-        leftIcon={<Mail size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
+        textContentType="emailAddress"
+        returnKeyType="send"
+        onSubmitEditing={submit}
       />
-
-      <Button
-        label="Send Reset Link"
-        variant="gradient"
-        glow
-        loading={formState.isSubmitting}
-        onPress={handleSubmit(onSubmit)}
-      />
-
-      <View style={styles.footer}>
-        <Text variant="bodyStrong" color="accent" onPress={() => router.replace('/(auth)/login')}>
-          Back to sign in
-        </Text>
-      </View>
+      <Button label="Send Reset Code" loading={formState.isSubmitting} onPress={submit} />
     </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Spacing.sm },
-});

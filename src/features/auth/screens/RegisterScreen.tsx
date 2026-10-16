@@ -1,24 +1,19 @@
 /**
- * RegisterScreen — mock/local sign-up. Validates with Zod, creates the session and
- * returns to where the user came from (or Home).
+ * RegisterScreen — creates the account, merges guest cart/wishlist and returns to where
+ * the user came from (or Home). Password policy mirrors the backend (schemas.ts).
  */
-import { Lock, Mail, User } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import { Button, FormField, Text } from '@/components/ui';
-import { IconSize, Spacing } from '@/constants';
-import { useTheme } from '@/core/theme';
+import { Button, FormField } from '@/components/ui';
 import { syncGuestDataOnLogin } from '@/services/session-sync';
 import { toast, useSessionStore } from '@/store';
 import { getErrorMessage, haptics, zodResolver } from '@/utils';
 import { registerSchema, type RegisterValues } from '../schemas';
-import { AuthLayout } from '../components/AuthLayout';
-import { SocialRow } from '../components/SocialRow';
+import { AuthLayout, AuthLink } from '../components/AuthLayout';
+import { PasswordField } from '../components/PasswordField';
 
 export function RegisterScreen() {
-  const { colors } = useTheme();
   const router = useRouter();
   const signUp = useSessionStore((s) => s.signUp);
   const { control, handleSubmit, formState } = useForm<RegisterValues>({
@@ -38,16 +33,24 @@ export function RegisterScreen() {
       toast.error(getErrorMessage(err, 'Registration failed. Please try again.'));
     }
   };
+  const submit = handleSubmit(onSubmit);
 
   return (
-    <AuthLayout title="Join the Maison" subtitle="Create your account and unlock the full collection.">
+    <AuthLayout
+      eyebrow="Join the Maison"
+      title="Create account"
+      subtitle="Save your favourites, track orders and check out in moments."
+      footer={<AuthLink prompt="Already a member?" label="Sign in" onPress={() => router.replace('/(auth)/login')} />}
+    >
       <FormField
         control={control}
         name="fullName"
         label="Full Name"
         placeholder="Your name"
         autoCapitalize="words"
-        leftIcon={<User size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
+        autoComplete="name"
+        textContentType="name"
+        returnKeyType="next"
       />
       <FormField
         control={control}
@@ -56,40 +59,20 @@ export function RegisterScreen() {
         placeholder="you@example.com"
         keyboardType="email-address"
         autoCapitalize="none"
+        autoCorrect={false}
         autoComplete="email"
-        leftIcon={<Mail size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
+        textContentType="emailAddress"
+        returnKeyType="next"
       />
-      <FormField
+      <PasswordField
         control={control}
         name="password"
-        label="Password"
-        placeholder="••••••••"
-        secureTextEntry
-        leftIcon={<Lock size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
+        isNew
+        hint="8+ characters, including a letter and a number."
+        onSubmitEditing={submit}
       />
 
-      <Button
-        label="Create Account"
-        variant="gradient"
-        glow
-        loading={formState.isSubmitting}
-        onPress={handleSubmit(onSubmit)}
-      />
-
-      <SocialRow />
-
-      <View style={styles.footer}>
-        <Text variant="body" color="secondary">
-          Already a member?{' '}
-        </Text>
-        <Text variant="bodyStrong" color="accent" onPress={() => router.replace('/(auth)/login')}>
-          Sign in
-        </Text>
-      </View>
+      <Button label="Create Account" loading={formState.isSubmitting} onPress={submit} />
     </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Spacing.sm },
-});
