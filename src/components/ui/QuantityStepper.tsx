@@ -17,6 +17,8 @@ export type QuantityStepperProps = {
   max?: number;
   /** Compact (36pt) variant for dense rows; touch area is kept at 44pt via hitSlop. */
   compact?: boolean;
+  /** Explicit control height — use to match an adjacent Button (e.g. ControlHeight.md). */
+  height?: number;
   style?: ViewStyle;
 };
 
@@ -26,10 +28,11 @@ export function QuantityStepper({
   min = 1,
   max = 99,
   compact = false,
+  height,
   style,
 }: QuantityStepperProps) {
   const { colors } = useTheme();
-  const size = compact ? 36 : 44;
+  const size = height ? height - StyleSheet.hairlineWidth * 4 : compact ? 36 : 44;
   const slop = compact ? 4 : 0;
 
   const step = (delta: number) => {

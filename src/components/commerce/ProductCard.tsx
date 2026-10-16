@@ -5,6 +5,7 @@
  * Width-driven so it tiles in any responsive grid.
  */
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { ShoppingBag } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -41,9 +42,12 @@ export function ProductCard({
     haptics.success();
     const inCart = useCartStore.getState().items.find((i) => i.product.id === product.id);
     const result = addItem(product, 1, inCart ? inCart.volumeMl : defaultVariant(product)?.volumeMl);
-    toast.success(
-      result === 'replaced' ? `${product.name} size updated in your bag` : `${product.name} added to your bag`,
-    );
+    toast.show({
+      variant: 'success',
+      message:
+        result === 'replaced' ? `${product.name} size updated in your bag` : `${product.name} added to your bag`,
+      action: { label: 'View bag', onPress: () => router.push('/(tabs)/cart') },
+    });
   };
 
   const a11yLabel = [

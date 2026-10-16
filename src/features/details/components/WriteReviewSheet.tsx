@@ -57,30 +57,40 @@ export function WriteReviewSheet({
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <Text variant="title" style={styles.title}>
+      <Text variant="overline" color="accent">
+        YOUR IMPRESSION
+      </Text>
+      <Text variant="heading" style={styles.title} accessibilityRole="header">
         Write a Review
       </Text>
 
-      <View style={styles.stars}>
+      <Text variant="label" color="secondary" uppercase style={styles.ratingLabel}>
+        Rating · {rating} of 5
+      </Text>
+      <View style={styles.stars} accessibilityRole="radiogroup" accessibilityLabel="Rating">
         {[1, 2, 3, 4, 5].map((star) => (
           <Pressable
             key={star}
-            accessibilityRole="button"
+            accessibilityRole="radio"
             accessibilityLabel={`${star} star${star === 1 ? '' : 's'}`}
-            accessibilityState={{ selected: star === rating }}
-            onPress={() => setRating(star)}
-            hitSlop={8}
+            accessibilityState={{ checked: star === rating }}
+            onPress={() => {
+              haptics.selection();
+              setRating(star);
+            }}
+            style={styles.star}
           >
             <Star
               size={IconSize.lg}
-              color={colors.accent}
+              color={star <= rating ? colors.accent : colors.borderStrong}
               fill={star <= rating ? colors.accent : 'transparent'}
-              strokeWidth={1.75}
+              strokeWidth={1.25}
             />
           </Pressable>
         ))}
       </View>
 
+      <View style={styles.fields}>
       <FormField control={control} name="title" label="Title" placeholder="Sum it up in a few words" />
       <FormField
         control={control}
@@ -90,11 +100,10 @@ export function WriteReviewSheet({
         multiline
         numberOfLines={4}
       />
+      </View>
 
       <Button
         label="Submit Review"
-        variant="gradient"
-        glow
         loading={createReview.isPending}
         onPress={handleSubmit(onSubmit)}
         style={styles.submit}
@@ -104,7 +113,10 @@ export function WriteReviewSheet({
 }
 
 const styles = StyleSheet.create({
-  title: { marginBottom: Spacing.md },
-  stars: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
-  submit: { marginTop: Spacing.sm },
+  title: { marginTop: Spacing.xs, marginBottom: Spacing.xl },
+  ratingLabel: { marginBottom: Spacing.xs },
+  stars: { flexDirection: 'row', marginBottom: Spacing.lg, marginLeft: -Spacing.sm },
+  star: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  submit: { marginTop: Spacing.lg },
+  fields: { gap: Spacing.lg },
 });

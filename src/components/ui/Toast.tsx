@@ -61,6 +61,22 @@ function ToastItem({ toast }: { toast: ToastConfig }) {
             {toast.message}
           </Text>
         </View>
+        {toast.action ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={toast.action.label}
+            hitSlop={8}
+            onPress={() => {
+              dismiss(toast.id);
+              toast.action?.onPress();
+            }}
+            style={({ pressed }) => [styles.action, { borderColor: colors.borderStrong, opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text variant="label" uppercase>
+              {toast.action.label}
+            </Text>
+          </Pressable>
+        ) : null}
       </Pressable>
     </Animated.View>
   );
@@ -99,4 +115,12 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   body: { flex: 1, gap: 2 },
+  action: {
+    minHeight: 32,
+    paddingHorizontal: Spacing.md,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderRadius: Radius.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
