@@ -1,61 +1,97 @@
 /**
- * OrderCard — order summary row: reference, date, status badge, thumbnails, total.
+ * OrderCard — order history row: reference + status, placed date, a stacked strip of
+ * purchase-time thumbnails (+N), piece count and total, with a chevron affordance.
  */
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Badge, Card, Price, Text, type BadgeTone } from '@/components/ui';
+import { Text } from '@/components/ui';
 import { Radius, Spacing } from '@/constants';
-import type { Order, OrderStatus } from '@/types';
-import { formatShortDate } from '@/utils';
+import { useTheme } from '@/core/theme';
+import type { Order } from '@/types';
+import { formatPrice, formatShortDate } from '@/utils';
+import { OrderStatusPill } from './OrderStatusPill';
 
-const STATUS_TONE: Record<OrderStatus, BadgeTone> = {
-  processing: 'gold',
-  shipped: 'emerald',
-  delivered: 'emerald',
-  cancelled: 'error',
-};
+const MAX_THUMBS = 3;
 
 export function OrderCard({ order, onPress }: { order: Order; onPress?: (order: Order) => void }) {
-  const thumbs = order.items.slice(0, 3);
+  const { colors } = useTheme();
+  const thumbs = order.items.slice(0, MAX_THUMBS);
+  const extra = order.items.length - thumbs.length;
+  const pieces = order.items.reduce((n, i) => n + i.quantity, 0);
 
   return (
-    <Card onPress={onPress ? () => onPress(order) : undefined} elevation="sm">
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Order ${order.reference}, ${order.status}, placed ${formatShortDate(order.placedAt)}, ${pieces} pieces, ${formatPrice(order.total, order.currency)}`}
+      accessibilityHint="Opens order details"
+      disabled={!onPress}
+      onPress={() => onPress?.(order)}
+      style={({ pressed }) => [
+        styles.card,
+        { borderColor: colors.border, backgroundColor: colors.surface, opacity: pressed ? 0.75 : 1 },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text variant="bodyStrong">{order.reference}</Text>
+          <Text variant="label" uppercase style={styles.ref}>
+            {order.reference}
+          </Text>
           <Text variant="caption" color="muted">
-            {formatShortDate(order.placedAt)}
+            Placed {formatShortDate(order.placedAt)}
           </Text>
         </View>
-        <Badge label={order.status} tone={STATUS_TONE[order.status]} />
+        <OrderStatusPill status={order.status} />
       </View>
 
-      <View style={styles.thumbs}>
-        {thumbs.map((item, index) => (
-          <Image
-            key={`${item.productId}-${index}`}
-            source={{ uri: item.productImage }}
-            style={styles.thumb}
-            contentFit="cover"
-            transition={200}
-          />
-        ))}
-        <View style={styles.meta}>
-          <Text variant="caption" color="secondary">
-            {order.items.length} item{order.items.length > 1 ? 's' : ''}
-          </Text>
-          <Price amount={order.total} currency={order.currency} variant="price" showDiscount={false} />
+      <View style={[styles.footer, { borderTopColor: colors.divider }]}>
+        <View style={styles.thumbs}>
+          {thumbs.map((item, index) => (
+            <View
+              key={`${item.productId}-${index}`}
+              style={[
+                styles.thumb,
+                { backgroundColor: colors.imageWell, borderColor: colors.surface, marginLeft: index === 0 ? 0 : -12 },
+              ]}
+            >
+              <Image source={{ uri: item.productImage }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+            </View>
+          ))}
+          {extra > 0 ? (
+            <View style={[styles.thumb, styles.more, { backgroundColor: colors.surfaceElevated, borderColor: colors.surface }]}>
+              <Text variant="caption" color="secondary">
+                +{extra}
+              </Text>
+            </View>
+          ) : null}
         </View>
+        <View style={styles.meta}>
+          <Text variant="caption" color="muted">
+            {pieces} {pieces === 1 ? 'piece' : 'pieces'}
+          </Text>
+          <Text variant="price">{formatPrice(order.total, order.currency)}</Text>
+        </View>
+        {onPress ? <ChevronRight size={16} color={colors.text.muted} strokeWidth={1.5} /> : null}
       </View>
-    </Card>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerText: { gap: 2 },
-  thumbs: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.lg },
-  thumb: { width: 48, height: 48, borderRadius: Radius.sm },
-  meta: { flex: 1, alignItems: 'flex-end', gap: 2 },
+  card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: Radius.sm, padding: Spacing.lg, gap: Spacing.lg },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md },
+  headerText: { gap: 4, flex: 1 },
+  ref: { letterSpacing: 1.6 },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingTop: Spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  thumbs: { flexDirection: 'row', flex: 1 },
+  thumb: { width: 44, height: 54, borderRadius: Radius.xs, overflow: 'hidden', borderWidth: 2 },
+  more: { alignItems: 'center', justifyContent: 'center', marginLeft: -12 },
+  meta: { alignItems: 'flex-end', gap: 2 },
 });

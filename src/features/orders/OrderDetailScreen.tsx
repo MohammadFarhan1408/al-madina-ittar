@@ -1,29 +1,37 @@
 /**
- * OrderDetailScreen — single order view: line items, shipping address, totals,
- * and live payment status (polls while 'processing', offers retry on 'failed').
+ * OrderDetailScreen — single order view: live status headline + tracking timeline,
+ * the purchase-time items, delivery and payment details (status polls while
+ * 'processing'; retry on 'failed'/'cancelled'), totals, payment attempts and help.
+ *
+ * Layout: an editorial status block, then hairline-ruled sections (no boxed cards).
+ * States: skeleton while loading, error with retry.
  */
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
+import { MessageCircle } from 'lucide-react-native';
+import { type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { OrderStatusPill } from '@/components/commerce';
 import { StackHeader } from '@/components/layout';
-import { Badge, Button, Card, Divider, ErrorState, Loader, Text, type BadgeTone } from '@/components/ui';
+import { Button, Divider, ErrorState, MenuRow, Skeleton, Text } from '@/components/ui';
 import { Layout, Radius, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { useOrder, useOrderPayments, useRetryPayment } from '@/hooks/queries';
 import { toast } from '@/store';
-import type { PaymentStatus } from '@/types';
-import { formatPrice, formatVolume, uuid } from '@/utils';
+import type { Order } from '@/types';
+import { formatPrice, formatShortDate, formatVolume, uuid } from '@/utils';
 import { OrderTimeline } from './components/OrderTimeline';
 
-const PAYMENT_TONE: Record<PaymentStatus, BadgeTone> = {
-  pending: 'gold',
-  processing: 'gold',
-  paid: 'emerald',
-  failed: 'error',
-  cancelled: 'neutral',
-  refunded: 'neutral',
+const HEADLINE: Record<Order['status'], string> = {
+  processing: 'Being prepared',
+  shipped: 'On its way',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
+const PAYMENT_METHOD = { card: 'Credit / Debit Card', wallet: 'Digital Wallet', cod: 'Cash on Delivery' } as const;
+const DELIVERY_METHOD = { standard: 'Standard Delivery', express: 'Express Delivery' } as const;
 
 export function OrderDetailScreen() {
   const { colors } = useTheme();
@@ -45,130 +53,191 @@ export function OrderDetailScreen() {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
         <StackHeader overline="Order" title="Order Details" />
-        <View style={styles.loader}>
-          <Loader />
+        <View style={[styles.content, { gap: Spacing.lg }]} accessible accessibilityLabel="Loading order">
+          <Skeleton width="30%" height={9} />
+          <Skeleton width="60%" height={28} />
+          <Skeleton width="45%" height={11} />
+          <View style={{ height: Spacing.lg }} />
+          {Array.from({ length: 3 }).map((_, i) => (
+            <View key={i} style={styles.skelRow}>
+              <Skeleton width={30} height={30} radius={15} />
+              <Skeleton width="55%" height={12} />
+            </View>
+          ))}
         </View>
       </View>
     );
   }
 
+  const paymentProblem = order.paymentStatus === 'failed' || order.paymentStatus === 'cancelled';
+  const pieces = order.items.reduce((n, i) => n + i.quantity, 0);
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <StackHeader overline={order.reference} title="Order Details" />
+      <StackHeader overline="Order" title={order.reference} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <OrderTimeline order={order} />
-        <Card style={styles.section}>
-          <View style={styles.row}>
-            <Text variant="bodyStrong">Fulfillment</Text>
-            <Badge label={order.status} tone="gold" />
+        <Animated.View entering={FadeIn.duration(300)} style={styles.statusBlock}>
+          <View style={styles.statusHead} accessibilityLiveRegion="polite">
+            <Text variant="overline" color="accent">
+              PLACED {formatShortDate(order.placedAt).toUpperCase()}
+            </Text>
+            <Text variant="heading" accessibilityRole="header">
+              {HEADLINE[order.status]}
+            </Text>
           </View>
-          <View style={styles.row}>
-            <Text variant="bodyStrong">Payment</Text>
-            <Badge label={order.paymentStatus} tone={PAYMENT_TONE[order.paymentStatus]} />
-          </View>
-          {order.paymentStatus === 'failed' || order.paymentStatus === 'cancelled' ? (
+          <OrderTimeline order={order} />
+        </Animated.View>
+
+        {paymentProblem ? (
+          <View style={[styles.alert, { backgroundColor: colors.error.soft }]}>
+            <Text variant="bodyStrong" color="error">
+              Payment {order.paymentStatus === 'failed' ? 'failed' : 'was cancelled'}
+            </Text>
+            <Text variant="caption" color="secondary">
+              Retry to complete payment for this order.
+            </Text>
             <Button
               label="Retry Payment"
-              variant="outline"
-              size="sm"
               loading={retryPayment.isPending}
               onPress={() =>
                 retryPayment.mutate(uuid(), {
                   onError: () => toast.error('Retry failed. Please try again.'),
                 })
               }
+              style={styles.alertBtn}
             />
-          ) : null}
-        </Card>
+          </View>
+        ) : null}
 
-        <Card style={styles.section}>
-          <Text variant="overline" color="muted">
-            SHIPPING TO
-          </Text>
-          <Text variant="bodyStrong">{order.shippingAddress.fullName}</Text>
-          <Text variant="caption" color="secondary">
-            {order.shippingAddress.address}, {order.shippingAddress.city}
-          </Text>
-          <Text variant="caption" color="secondary">
-            {order.shippingAddress.phone}
-          </Text>
-        </Card>
-
-        <Card style={styles.section}>
-          <Text variant="overline" color="muted">
-            ITEMS
-          </Text>
+        <Section title={`${pieces} ${pieces === 1 ? 'Piece' : 'Pieces'}`}>
           {order.items.map((item, index) => (
             <View key={`${item.productId}-${index}`} style={styles.itemRow}>
-              <Image source={{ uri: item.productImage }} style={styles.thumb} contentFit="cover" />
-              <View style={styles.itemBody}>
-                <Text variant="bodyStrong">{item.productName}</Text>
-                <Text variant="caption" color="secondary">
-                  Qty {item.quantity}
-                  {item.volumeMl ? ` · ${formatVolume(item.volumeMl)}` : ''}
+              <View style={[styles.thumb, { backgroundColor: colors.imageWell }]}>
+                <Image source={{ uri: item.productImage }} style={StyleSheet.absoluteFill} contentFit="cover" />
+              </View>
+              <View style={styles.flex}>
+                <Text variant="bodyStrong" numberOfLines={2}>
+                  {item.productName}
+                </Text>
+                <Text variant="caption" color="muted">
+                  {[item.volumeMl ? formatVolume(item.volumeMl) : null, `Qty ${item.quantity}`].filter(Boolean).join(' · ')}
                 </Text>
               </View>
-              <Text variant="body">{formatPrice(item.price * item.quantity, order.currency)}</Text>
+              <Text variant="price">{formatPrice(item.price * item.quantity, order.currency)}</Text>
             </View>
           ))}
-          <Divider spacing={Spacing.xs} />
+        </Section>
+
+        <Section title="Delivery">
+          <Text variant="bodyStrong">{order.shippingAddress.fullName}</Text>
+          <Text variant="body" color="secondary">
+            {order.shippingAddress.address}, {order.shippingAddress.city}
+          </Text>
+          <Text variant="caption" color="muted">
+            {order.shippingAddress.phone} · {DELIVERY_METHOD[order.deliveryMethod]}
+          </Text>
+        </Section>
+
+        <Section title="Payment">
           <View style={styles.row}>
-            <Text variant="body" color="secondary">
-              Subtotal
-            </Text>
-            <Text variant="body">{formatPrice(order.subtotal, order.currency)}</Text>
+            <Text variant="body">{PAYMENT_METHOD[order.paymentMethod]}</Text>
+            <OrderStatusPill kind="payment" status={order.paymentStatus} />
           </View>
-          <View style={styles.row}>
-            <Text variant="body" color="secondary">
-              Shipping
-            </Text>
-            <Text variant="body">{order.shipping === 0 ? 'Complimentary' : formatPrice(order.shipping, order.currency)}</Text>
-          </View>
-          {order.discountAmount ? (
-            <View style={styles.row}>
-              <Text variant="body" color="secondary">
-                Discount ({order.couponCode})
+          {transactions && transactions.length > 1 ? (
+            <View style={styles.attempts}>
+              <Text variant="overline" color="muted">
+                ATTEMPTS
               </Text>
-              <Text variant="body" color="accent">
-                -{formatPrice(order.discountAmount, order.currency)}
-              </Text>
+              {transactions.map((txn) => (
+                <View key={txn.id} style={styles.row}>
+                  <Text variant="caption" color="secondary">
+                    {new Date(txn.createdAt).toLocaleString()}
+                  </Text>
+                  <Text
+                    variant="label"
+                    uppercase
+                    color={txn.status === 'succeeded' ? 'success' : txn.status === 'failed' ? 'error' : 'secondary'}
+                  >
+                    {txn.status}
+                  </Text>
+                </View>
+              ))}
             </View>
           ) : null}
-          <View style={styles.row}>
-            <Text variant="subtitle">Total</Text>
-            <Text variant="priceLarge" color="accent">
-              {formatPrice(order.total, order.currency)}
-            </Text>
-          </View>
-        </Card>
+        </Section>
 
-        {transactions && transactions.length > 1 ? (
-          <Card style={styles.section}>
-            <Text variant="overline" color="muted">
-              PAYMENT ATTEMPTS
-            </Text>
-            {transactions.map((txn) => (
-              <View key={txn.id} style={styles.row}>
-                <Text variant="caption" color="secondary">
-                  {new Date(txn.createdAt).toLocaleString()}
-                </Text>
-                <Badge label={txn.status} tone={txn.status === 'succeeded' ? 'emerald' : txn.status === 'failed' ? 'error' : 'gold'} />
-              </View>
-            ))}
-          </Card>
-        ) : null}
+        <Section title="Summary">
+          <SummaryRow label="Subtotal" value={formatPrice(order.subtotal, order.currency)} />
+          <SummaryRow
+            label="Delivery"
+            value={order.shipping === 0 ? 'Complimentary' : formatPrice(order.shipping, order.currency)}
+          />
+          {order.discountAmount ? (
+            <SummaryRow
+              label={`Discount${order.couponCode ? ` (${order.couponCode})` : ''}`}
+              value={`−${formatPrice(order.discountAmount, order.currency)}`}
+              positive
+            />
+          ) : null}
+          <Divider spacing={Spacing.xs} />
+          <View style={styles.row}>
+            <Text variant="bodyStrong">Total</Text>
+            <Text variant="priceLarge">{formatPrice(order.total, order.currency)}</Text>
+          </View>
+        </Section>
+
+        <View style={[styles.help, { borderTopColor: colors.divider }]}>
+          <MenuRow
+            icon={<MessageCircle size={18} color={colors.text.secondary} strokeWidth={1.5} />}
+            title="Need help with this order?"
+            subtitle={`Quote ${order.reference} when you contact us`}
+            onPress={() => router.push('/contact')}
+          />
+        </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.section, { borderTopColor: colors.divider }]}>
+      <Text variant="overline" color="muted">
+        {title.toUpperCase()}
+      </Text>
+      <View style={styles.sectionBody}>{children}</View>
+    </View>
+  );
+}
+
+function SummaryRow({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+  return (
+    <View style={styles.row}>
+      <Text variant="body" color="secondary">
+        {label}
+      </Text>
+      <Text variant="body" color={positive ? 'success' : 'primary'}>
+        {value}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { padding: Layout.screenPadding, gap: Spacing.lg, paddingBottom: Spacing.giant },
-  section: { gap: Spacing.sm },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  flex: { flex: 1 },
+  content: { paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.xxl, paddingBottom: Spacing.giant },
+  skelRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  statusBlock: { gap: Spacing.xl, paddingBottom: Spacing.xxl },
+  statusHead: { gap: Spacing.xs },
+  alert: { padding: Spacing.lg, borderRadius: Radius.sm, gap: Spacing.xs, marginBottom: Spacing.xxl },
+  alertBtn: { marginTop: Spacing.md },
+  section: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: Spacing.xl, gap: Spacing.md },
+  sectionBody: { gap: Spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.xs },
-  itemBody: { flex: 1, gap: 2 },
-  thumb: { width: 44, height: 44, borderRadius: Radius.sm },
+  thumb: { width: 52, height: 64, borderRadius: Radius.xs, overflow: 'hidden' },
+  attempts: { gap: Spacing.sm, marginTop: Spacing.sm },
+  help: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.sm },
 });
