@@ -3,26 +3,44 @@
  * Stepper, a sticky action bar, an optional sign-in prompt for guests, saved-address
  * selection, a coupon field, and order placement that routes to a live-tracking
  * success screen (polls payment status, offers retry on failure).
+ *
+ * Presentation: each step is one calm column of hairline option rows; the Review step
+ * recaps every choice with "Edit" links back to its step, lists the pieces, and ends on
+ * the summary. The action bar always shows the payable total and names the next step;
+ * "Place Order" is the flow's single gold moment. Logic, payloads and the idempotency
+ * key are unchanged.
  */
-import { CreditCard, MapPin, Plus, Truck, Wallet, Zap } from 'lucide-react-native';
+import {
+  CreditCard,
+  Lock,
+  LogIn,
+  MapPin,
+  Plus,
+  ShoppingBag,
+  Truck,
+  Wallet,
+  Zap,
+} from 'lucide-react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderSummary } from '@/components/commerce';
 import { StackHeader } from '@/components/layout';
-import { Button, Card, FormField, GlassSurface, Stepper, Text } from '@/components/ui';
-import { IconSize, Layout, Spacing } from '@/constants';
+import { Button, EmptyState, FormField, GlassSurface, Stepper, Text } from '@/components/ui';
+import { HitSlop, IconSize, Layout, Radius, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { AppConfig } from '@/core/config';
 import { addressesService } from '@/services';
 import { openStripeCheckoutForOrder, paymentReturnUrl } from '@/services/payments/checkout-browser';
 import { toast, useCartStore, useCartSummary, useSessionStore } from '@/store';
 import { QueryKeys, useAddresses, useAppliedCoupon, usePlaceOrder } from '@/hooks/queries';
-import { haptics, uuid, zodResolver } from '@/utils';
+import { formatPrice, formatVolume, haptics, unitPrice, uuid, zodResolver } from '@/utils';
 import type { Order } from '@/types';
 import { foldAddress, makeAddressSchema, type AddressValues } from './schema';
 import { CouponField } from '../cart/components/CouponField';
@@ -30,6 +48,8 @@ import { OptionRow } from './components/OptionRow';
 import { OrderSuccess } from './components/OrderSuccess';
 
 const STEPS = ['Address', 'Delivery', 'Payment', 'Review'];
+const PAYMENT_LABEL = { card: 'Credit / Debit Card', wallet: 'Digital Wallet', cod: 'Cash on Delivery' } as const;
+const DELIVERY_LABEL = { standard: 'Standard Delivery', express: 'Express Delivery' } as const;
 const EXPRESS_DELIVERY_FEE = 30; // mirrors the backend's EXPRESS_DELIVERY_FEE (business.ts)
 
 function computeShipping(subtotal: number, delivery: 'standard' | 'express'): number {
@@ -150,6 +170,22 @@ export function CheckoutScreen() {
     return <OrderSuccess order={placedOrder} guestEmail={isAuthenticated ? undefined : getValues('email').trim()} />;
   }
 
+  if (items.length === 0) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
+        <StackHeader overline="Secure Checkout" title="Checkout" />
+        <EmptyState
+          icon={<ShoppingBag size={IconSize.lg} color={colors.text.secondary} strokeWidth={1.25} />}
+          title="Your bag is empty"
+          message="Add a fragrance to your bag to check out."
+          actionLabel="Discover the collection"
+          actionVariant="primary"
+          onAction={() => router.replace('/(tabs)/shop')}
+        />
+      </View>
+    );
+  }
+
   const next = () => {
     if (step === 0) {
       handleSubmit(() => setStep(1))();
@@ -161,158 +197,272 @@ export function CheckoutScreen() {
 
   const back = () => (step === 0 ? router.back() : setStep(step - 1));
 
+  const payable = checkoutSummary.total - discount;
+  const isLast = step === STEPS.length - 1;
+  const ctaLabel = isLast ? 'Place Order' : `Continue to ${STEPS[step + 1]}`;
+  const standardFee = computeShipping(summary.subtotal, 'standard');
+  const expressFee = computeShipping(summary.subtotal, 'express');
+  const iconColor = colors.text.secondary;
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <StackHeader overline="Secure Checkout" title="Checkout" onBack={back} />
+      <StackHeader overline="Secure Checkout" title={STEPS[step]} onBack={back} />
 
-      <View style={styles.stepper}>
+      <View style={[styles.stepper, { borderBottomColor: colors.divider }]}>
         <Stepper steps={STEPS} activeIndex={step} />
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {step === 0 ? (
-            <View style={styles.section}>
-              {!isAuthenticated ? (
-                <Card variant="glass" style={styles.prompt}>
-                  <Text variant="bodyStrong">Checking out as a guest</Text>
-                  <Text variant="caption" color="secondary">
-                    Sign in for faster checkout and to track your orders.
-                  </Text>
-                  <Button label="Sign in" variant="outline" size="sm" fullWidth={false} onPress={() => router.push('/(auth)/login')} style={styles.promptBtn} />
-                </Card>
-              ) : null}
-              <Text variant="title">Shipping Address</Text>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 140 + insets.bottom }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View key={step} entering={FadeIn.duration(260)} style={styles.section}>
+            {step === 0 ? (
+              <>
+                {!isAuthenticated ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Sign in for faster checkout"
+                    onPress={() => router.push('/(auth)/login')}
+                    style={({ pressed }) => [
+                      styles.guest,
+                      { borderColor: colors.border, backgroundColor: colors.surface, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <LogIn size={18} color={iconColor} strokeWidth={1.5} />
+                    <View style={styles.flex}>
+                      <Text variant="bodyStrong">Checking out as a guest</Text>
+                      <Text variant="caption" color="secondary">
+                        Sign in for faster checkout and order tracking.
+                      </Text>
+                    </View>
+                    <Text variant="label" uppercase style={styles.underline}>
+                      Sign in
+                    </Text>
+                  </Pressable>
+                ) : null}
 
-              {isAuthenticated && savedAddresses.length > 0 ? (
-                <View style={styles.section}>
-                  {savedAddresses.map((address) => (
+                <SectionTitle eyebrow="Step 1 of 4" title="Where should we deliver?" />
+
+                {isAuthenticated && savedAddresses.length > 0 ? (
+                  <View style={styles.options} accessibilityRole="radiogroup" accessibilityLabel="Saved addresses">
+                    {savedAddresses.map((address) => (
+                      <OptionRow
+                        key={address.id}
+                        icon={<MapPin size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                        title={address.label ?? address.fullName}
+                        subtitle={`${address.addressLine}, ${address.city}`}
+                        selected={selectedAddressId === address.id}
+                        onPress={() => selectSavedAddress(address.id)}
+                      />
+                    ))}
                     <OptionRow
-                      key={address.id}
-                      icon={<MapPin size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                      title={address.label ?? address.fullName}
-                      subtitle={`${address.addressLine}, ${address.city}`}
-                      selected={selectedAddressId === address.id}
-                      onPress={() => selectSavedAddress(address.id)}
+                      icon={<Plus size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                      title="Use a new address"
+                      selected={showAddressForm}
+                      onPress={startNewAddress}
                     />
-                  ))}
-                  <OptionRow
-                    icon={<Plus size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                    title="Add a new address"
-                    selected={showAddressForm}
-                    onPress={startNewAddress}
-                  />
-                </View>
-              ) : null}
+                  </View>
+                ) : null}
 
-              {showAddressForm ? (
-                <View style={styles.section}>
-                  {!isAuthenticated ? (
+                {showAddressForm ? (
+                  <View style={styles.form}>
+                    {!isAuthenticated ? (
+                      <FormField
+                        control={control}
+                        name="email"
+                        label="Email"
+                        placeholder="you@example.com"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                        textContentType="emailAddress"
+                        hint="For your order confirmation and tracking."
+                      />
+                    ) : null}
                     <FormField
                       control={control}
-                      name="email"
-                      label="Email"
-                      placeholder="you@example.com"
-                      keyboardType="email-address"
-                      autoCapitalize="none"
+                      name="fullName"
+                      label="Full Name"
+                      placeholder="Your name"
+                      autoCapitalize="words"
+                      autoComplete="name"
+                      textContentType="name"
                     />
-                  ) : null}
-                  <FormField control={control} name="fullName" label="Full Name" placeholder="Your name" autoCapitalize="words" />
-                  <FormField control={control} name="phone" label="Phone" placeholder="+971 50 000 0000" keyboardType="phone-pad" />
-                  <FormField control={control} name="address" label="Address" placeholder="Street, building, villa" />
-                  <FormField control={control} name="city" label="City" placeholder="Dubai" autoCapitalize="words" />
+                    <FormField
+                      control={control}
+                      name="phone"
+                      label="Phone"
+                      placeholder="+971 50 000 0000"
+                      keyboardType="phone-pad"
+                      autoComplete="tel"
+                      textContentType="telephoneNumber"
+                    />
+                    <FormField
+                      control={control}
+                      name="address"
+                      label="Address"
+                      placeholder="Street, building, villa"
+                      autoComplete="street-address"
+                      textContentType="fullStreetAddress"
+                    />
+                    <FormField
+                      control={control}
+                      name="city"
+                      label="City"
+                      placeholder="Dubai"
+                      autoCapitalize="words"
+                      textContentType="addressCity"
+                    />
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+
+            {step === 1 ? (
+              <>
+                <SectionTitle eyebrow="Step 2 of 4" title="How fast would you like it?" />
+                <View style={styles.options} accessibilityRole="radiogroup" accessibilityLabel="Delivery method">
+                  <OptionRow
+                    icon={<Truck size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                    title="Standard Delivery"
+                    subtitle={`3–5 business days · Complimentary over ${formatPrice(AppConfig.freeShippingThreshold, summary.currency)}`}
+                    meta={standardFee === 0 ? 'Free' : formatPrice(standardFee, summary.currency)}
+                    selected={delivery === 'standard'}
+                    onPress={() => setDelivery('standard')}
+                  />
+                  <OptionRow
+                    icon={<Zap size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                    title="Express Delivery"
+                    subtitle="Next business day"
+                    meta={formatPrice(expressFee, summary.currency)}
+                    selected={delivery === 'express'}
+                    onPress={() => setDelivery('express')}
+                  />
                 </View>
-              ) : null}
-            </View>
-          ) : null}
+              </>
+            ) : null}
 
-          {step === 1 ? (
-            <View style={styles.section}>
-              <Text variant="title">Delivery Method</Text>
-              <OptionRow
-                icon={<Truck size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                title="Standard Delivery"
-                subtitle="3–5 business days · Complimentary over AED 250"
-                selected={delivery === 'standard'}
-                onPress={() => setDelivery('standard')}
-              />
-              <OptionRow
-                icon={<Zap size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                title="Express Delivery"
-                subtitle="Next business day · AED 30"
-                selected={delivery === 'express'}
-                onPress={() => setDelivery('express')}
-              />
-            </View>
-          ) : null}
+            {step === 2 ? (
+              <>
+                <SectionTitle eyebrow="Step 3 of 4" title="How would you like to pay?" />
+                <View style={styles.options} accessibilityRole="radiogroup" accessibilityLabel="Payment method">
+                  <OptionRow
+                    icon={<CreditCard size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                    title="Credit / Debit Card"
+                    subtitle="Visa, Mastercard, Amex"
+                    selected={payment === 'card'}
+                    onPress={() => setPayment('card')}
+                  />
+                  <OptionRow
+                    icon={<Wallet size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                    title="Digital Wallet"
+                    subtitle="Apple Pay · Google Pay"
+                    selected={payment === 'wallet'}
+                    onPress={() => setPayment('wallet')}
+                  />
+                  <OptionRow
+                    icon={<Truck size={IconSize.sm} color={iconColor} strokeWidth={1.5} />}
+                    title="Cash on Delivery"
+                    subtitle="Pay when your order arrives"
+                    selected={payment === 'cod'}
+                    onPress={() => setPayment('cod')}
+                  />
+                </View>
+                {payment !== 'cod' ? (
+                  <View style={styles.secureNote}>
+                    <Lock size={13} color={colors.text.muted} strokeWidth={1.5} />
+                    <Text variant="caption" color="muted" style={styles.flex}>
+                      After you place the order, you will complete payment on Stripe&apos;s secure page.
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            ) : null}
 
-          {step === 2 ? (
-            <View style={styles.section}>
-              <Text variant="title">Payment Method</Text>
-              <OptionRow
-                icon={<CreditCard size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                title="Credit / Debit Card"
-                subtitle="Visa, Mastercard, Amex"
-                selected={payment === 'card'}
-                onPress={() => setPayment('card')}
-              />
-              <OptionRow
-                icon={<Wallet size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                title="Digital Wallet"
-                subtitle="Apple Pay · Google Pay"
-                selected={payment === 'wallet'}
-                onPress={() => setPayment('wallet')}
-              />
-              <OptionRow
-                icon={<Truck size={IconSize.md} color={colors.accent} strokeWidth={1.75} />}
-                title="Cash on Delivery"
-                subtitle="Pay when your order arrives"
-                selected={payment === 'cod'}
-                onPress={() => setPayment('cod')}
-              />
-            </View>
-          ) : null}
+            {step === 3 ? (
+              <>
+                <SectionTitle eyebrow="Step 4 of 4" title="Review your order" />
 
-          {step === 3 ? (
-            <View style={styles.section}>
-              <Text variant="title">Review Order</Text>
-              <Card>
-                <Text variant="overline" color="muted">
-                  SHIPPING TO
-                </Text>
-                <Text variant="bodyStrong">{getValues('fullName')}</Text>
-                <Text variant="caption" color="secondary">
-                  {getValues('address')}, {getValues('city')}
-                </Text>
-                <Text variant="caption" color="secondary">
-                  {getValues('phone')}
-                </Text>
-              </Card>
+                <RecapRow label="Deliver to" onEdit={() => setStep(0)}>
+                  <Text variant="bodyStrong">{getValues('fullName')}</Text>
+                  <Text variant="caption" color="secondary">
+                    {getValues('address')}, {getValues('city')}
+                  </Text>
+                  <Text variant="caption" color="secondary">
+                    {getValues('phone')}
+                  </Text>
+                </RecapRow>
+                <RecapRow label="Delivery" onEdit={() => setStep(1)}>
+                  <Text variant="body">{DELIVERY_LABEL[delivery]}</Text>
+                </RecapRow>
+                <RecapRow label="Payment" onEdit={() => setStep(2)}>
+                  <Text variant="body">{PAYMENT_LABEL[payment]}</Text>
+                </RecapRow>
 
-              <CouponField subtotal={summary.subtotal} currency={summary.currency} />
+                <View style={styles.items}>
+                  <Text variant="overline" color="muted">
+                    {summary.itemCount} {summary.itemCount === 1 ? 'PIECE' : 'PIECES'}
+                  </Text>
+                  {items.map((item) => (
+                    <View key={item.product.id} style={styles.itemRow}>
+                      <View style={[styles.itemThumb, { backgroundColor: colors.imageWell }]}>
+                        <Image source={{ uri: item.product.images[0] }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                      </View>
+                      <View style={styles.flex}>
+                        <Text variant="bodyStrong" numberOfLines={1}>
+                          {item.product.name}
+                        </Text>
+                        <Text variant="caption" color="muted">
+                          {[item.volumeMl ? formatVolume(item.volumeMl) : null, `Qty ${item.quantity}`]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </Text>
+                      </View>
+                      <Text variant="price">
+                        {formatPrice(unitPrice(item.product, item.volumeMl) * item.quantity, item.product.currency)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
 
-              <Card>
-                <OrderSummary summary={checkoutSummary} discount={discount} />
-              </Card>
-            </View>
-          ) : null}
+                <View style={[styles.couponWrap, { borderTopColor: colors.divider }]}>
+                  <CouponField subtotal={summary.subtotal} currency={summary.currency} />
+                </View>
+
+                <View style={styles.summary}>
+                  <OrderSummary summary={checkoutSummary} discount={discount} />
+                </View>
+              </>
+            ) : null}
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <GlassSurface radius={0} intensity={70} bordered={false} style={[styles.bar, { paddingBottom: insets.bottom + Spacing.md }]}>
-        <View style={[styles.barInner, { borderTopColor: colors.divider }]}>
-          <View style={styles.totalRow}>
-            <Text variant="caption" color="secondary">
-              Total
+      <GlassSurface radius={0} intensity={80} bordered={false} style={styles.bar}>
+        <View
+          style={[
+            styles.barInner,
+            {
+              paddingBottom: Math.max(insets.bottom, Spacing.md),
+              backgroundColor: colors.tabBar,
+              borderTopColor: colors.divider,
+            },
+          ]}
+        >
+          <View style={styles.totalCol} accessible accessibilityLabel={`Total ${formatPrice(payable, checkoutSummary.currency)}`}>
+            <Text variant="overline" color="muted">
+              TOTAL
             </Text>
-            <Text variant="priceLarge" color="accent">
-              {checkoutSummary.currency} {checkoutSummary.total - discount}
+            <Text variant="subtitle" numberOfLines={1}>
+              {formatPrice(payable, checkoutSummary.currency)}
             </Text>
           </View>
           <Button
-            label={step === STEPS.length - 1 ? 'Place Order' : 'Continue'}
-            variant="gradient"
-            glow
+            label={ctaLabel}
+            variant={isLast ? 'gradient' : 'primary'}
             loading={placeOrder.isPending}
             onPress={next}
             style={styles.cta}
@@ -323,14 +473,78 @@ export function CheckoutScreen() {
   );
 }
 
+function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <View style={styles.sectionTitle}>
+      <Text variant="overline" color="accent" uppercase>
+        {eyebrow}
+      </Text>
+      <Text variant="heading" style={styles.sectionHeading} accessibilityRole="header">
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+function RecapRow({ label, onEdit, children }: { label: string; onEdit: () => void; children: ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.recap, { borderBottomColor: colors.divider }]}>
+      <View style={styles.recapHead}>
+        <Text variant="overline" color="muted">
+          {label.toUpperCase()}
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Edit ${label.toLowerCase()}`}
+          hitSlop={HitSlop}
+          onPress={onEdit}
+          style={({ pressed }) => [styles.edit, { opacity: pressed ? 0.5 : 1 }]}
+        >
+          <Text variant="label" color="secondary" uppercase style={styles.underline}>
+            Edit
+          </Text>
+        </Pressable>
+      </View>
+      <View style={styles.recapBody}>{children}</View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   flex: { flex: 1 },
-  stepper: { paddingHorizontal: Layout.screenPadding, paddingVertical: Spacing.lg },
-  content: { paddingHorizontal: Layout.screenPadding, paddingBottom: 160 },
-  section: { gap: Spacing.lg },
-  prompt: { gap: Spacing.sm },
-  promptBtn: { marginTop: Spacing.sm },
+  stepper: {
+    paddingHorizontal: Layout.screenPadding,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  content: { paddingHorizontal: Layout.screenPadding, paddingTop: Spacing.xxl },
+  section: { gap: Spacing.xl },
+  sectionTitle: { gap: Spacing.xs },
+  sectionHeading: { fontSize: 26, lineHeight: 32 },
+  options: { gap: Spacing.sm },
+  form: { gap: Spacing.lg },
+  guest: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    padding: Spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.xs,
+  },
+  underline: { textDecorationLine: 'underline' },
+  secureNote: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
+  recap: { borderBottomWidth: StyleSheet.hairlineWidth, paddingBottom: Spacing.lg, gap: Spacing.sm },
+  recapHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  recapBody: { gap: 2 },
+  edit: { minHeight: 32, justifyContent: 'center' },
+  items: { gap: Spacing.md },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  itemThumb: { width: 48, height: 60, borderRadius: Radius.xs, overflow: 'hidden' },
+  couponWrap: { borderTopWidth: StyleSheet.hairlineWidth },
+  summary: { paddingTop: Spacing.sm },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   barInner: {
     flexDirection: 'row',
@@ -340,6 +554,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  totalRow: { gap: 2 },
-  cta: { flex: 1 },
+  totalCol: { gap: 2, minWidth: 96 },
+  cta: { flex: 1, alignSelf: 'center' },
 });
