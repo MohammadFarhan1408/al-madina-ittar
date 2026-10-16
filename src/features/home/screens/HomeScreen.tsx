@@ -1,10 +1,14 @@
 /**
- * HomeScreen — the luxury storefront. A single Animated.ScrollView drives the parallax
- * hero and a floating glass header that fades in on scroll. Sections: Hero → Categories →
- * Featured Collections → Signature → Best Sellers → Exclusive Offer → New Arrivals →
- * Seasonal → Reviews → Brand Story.
+ * HomeScreen — the storefront, paced like a printed lookbook.
+ *
+ * One Animated.ScrollView drives the parallax hero and a frosted header that fades in
+ * as the hero leaves. Rhythm: cinematic hero → scent families → signature → curated
+ * collections → best sellers → the oud edit → new arrivals → seasonal → heritage
+ * chapter (full-bleed) → testimonials → the maison letter. Sections that fail or come
+ * back empty hide themselves, so the page never shows a hole.
  */
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -14,13 +18,12 @@ import { OfferBanner } from '@/components/commerce';
 import { Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
 import { useBestSellers, useSeasonal, useSignature } from '@/hooks/queries';
-import { router } from 'expo-router';
 import type { Category, Collection, Product } from '@/types';
 import { BrandStory } from '../components/BrandStory';
 import { CategoryRail } from '../components/CategoryRail';
 import { CollectionsRail } from '../components/CollectionsRail';
 import { FloatingHeader } from '../components/FloatingHeader';
-import { HomeHero } from '../components/HomeHero';
+import { HomeHero, useHeroHeight } from '../components/HomeHero';
 import { HorizontalProductRail } from '../components/HorizontalProductRail';
 import { NewArrivalsGrid } from '../components/NewArrivalsGrid';
 import { NewsletterSignup } from '../components/NewsletterSignup';
@@ -29,6 +32,7 @@ import { ReviewsRail } from '../components/ReviewsRail';
 export function HomeScreen() {
   const { scrollY, handler } = useScrollY();
   const { colors } = useTheme();
+  const heroHeight = useHeroHeight();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const signature = useSignature();
@@ -47,6 +51,7 @@ export function HomeScreen() {
     (collection: Collection) => router.push({ pathname: '/products', params: { collectionId: collection.id } }),
     [],
   );
+  const openAll = useCallback(() => router.push('/products'), []);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await queryClient.refetchQueries({ type: 'active' }).catch(() => undefined);
@@ -54,20 +59,21 @@ export function HomeScreen() {
   }, [queryClient]);
 
   return (
-    <View style={styles.root}>
-      <FloatingHeader scrollY={scrollY} />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <FloatingHeader scrollY={scrollY} threshold={heroHeight - 80} />
       <Animated.ScrollView
         onScroll={handler}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.text.secondary} />
+        }
       >
         <HomeHero scrollY={scrollY} />
 
         <View style={styles.sections}>
-          <CategoryRail onSelect={openCategory} />
-          <CollectionsRail onSelect={openCollection} />
+          <CategoryRail onSelect={openCategory} onSeeAll={() => router.push('/(tabs)/shop')} />
           <HorizontalProductRail
             eyebrow="Iconic"
             title="Signature Ittars"
@@ -75,9 +81,10 @@ export function HomeScreen() {
             isLoading={signature.isLoading}
             isError={signature.isError}
             onRetry={signature.refetch}
-            onSeeAll={() => router.push('/products')}
+            onSeeAll={openAll}
             onSelect={openProduct}
           />
+          <CollectionsRail onSelect={openCollection} />
           <HorizontalProductRail
             eyebrow="Most Loved"
             title="Best Sellers"
@@ -85,7 +92,7 @@ export function HomeScreen() {
             isLoading={bestSellers.isLoading}
             isError={bestSellers.isError}
             onRetry={bestSellers.refetch}
-            onSeeAll={() => router.push('/products')}
+            onSeeAll={openAll}
             onSelect={openProduct}
           />
           <View style={styles.padded}>
@@ -93,6 +100,7 @@ export function HomeScreen() {
               eyebrow="THE OUD EDIT"
               title="Oud, Unveiled"
               subtitle="Deep, resinous and unmistakably Arabian — explore our oud fragrances."
+              ctaLabel="Explore oud"
               onPress={() => router.push({ pathname: '/products', params: { family: 'oud' } })}
             />
           </View>
@@ -104,11 +112,11 @@ export function HomeScreen() {
             isLoading={seasonal.isLoading}
             isError={seasonal.isError}
             onRetry={seasonal.refetch}
-            onSeeAll={() => router.push('/products')}
+            onSeeAll={openAll}
             onSelect={openProduct}
           />
-          <ReviewsRail />
           <BrandStory />
+          <ReviewsRail />
           <NewsletterSignup />
         </View>
       </Animated.ScrollView>
@@ -118,7 +126,7 @@ export function HomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  content: { paddingBottom: Layout.tabBarClearance + Spacing.xl },
-  sections: { gap: Layout.sectionGap, paddingTop: Layout.sectionGap },
+  content: { paddingBottom: Layout.tabBarClearance + Spacing.xxl },
+  sections: { gap: Layout.sectionGap, paddingTop: Spacing.huge },
   padded: { paddingHorizontal: Layout.screenPadding },
 });

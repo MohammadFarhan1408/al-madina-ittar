@@ -1,50 +1,45 @@
 /**
- * FloatingHeader — a frosted glass bar that fades in as the user scrolls past the hero,
- * giving persistent access to brand, search and cart once the hero scrolls away.
+ * FloatingHeader — a frosted bar that fades in once the hero scrolls away, keeping the
+ * wordmark, search and bag within reach. Mirrors the hero's top bar exactly so the
+ * hand-off reads as one continuous header.
  */
-import { Heart, Search, ShoppingBag } from 'lucide-react-native';
-import { Image, StyleSheet, View } from 'react-native';
+import { Search, ShoppingBag } from 'lucide-react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useHeaderReveal } from '@/animations';
 import { GlassSurface, IconButton, Text } from '@/components/ui';
-import { IconSize, Layout, Spacing } from '@/constants';
+import { Layout, Spacing } from '@/constants';
 import { useTheme } from '@/core/theme';
-import { selectCartCount, selectWishlistCount, useCartStore, useWishlistStore } from '@/store';
+import { selectCartCount, useCartStore } from '@/store';
 
-export function FloatingHeader({ scrollY }: { scrollY: SharedValue<number> }) {
+export function FloatingHeader({ scrollY, threshold }: { scrollY: SharedValue<number>; threshold: number }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const revealStyle = useHeaderReveal(scrollY, 360);
+  const revealStyle = useHeaderReveal(scrollY, threshold);
   const cartCount = useCartStore(selectCartCount);
-  const wishlistCount = useWishlistStore(selectWishlistCount);
 
   return (
     <Animated.View pointerEvents="box-none" style={[styles.host, revealStyle]}>
-      <GlassSurface radius={0} intensity={70} bordered={false} style={[styles.bar, { paddingTop: insets.top + Spacing.sm }]}>
-        <View style={[styles.inner, { borderBottomColor: colors.divider }]}>
-          <View style={styles.brand}>
-            <Image
-              source={require('@/assets/images/logo-mark.png')}
-              style={{ width: 26, height: 39 }}
-              resizeMode="contain"
-            />
-            <Text variant="subtitle" style={styles.wordmark}>
-              AL MADINA
-            </Text>
-          </View>
+      <GlassSurface radius={0} intensity={80} bordered={false}>
+        <View
+          style={[
+            styles.inner,
+            { paddingTop: insets.top + Spacing.xs, backgroundColor: colors.tabBar, borderBottomColor: colors.divider },
+          ]}
+        >
+          <Text variant="title" style={styles.wordmark} accessibilityRole="header">
+            AL MADINA
+          </Text>
           <View style={styles.actions}>
-            <IconButton onPress={() => router.push('/search')}>
-              <Search size={IconSize.sm} color={colors.text.primary} strokeWidth={1.75} />
+            <IconButton accessibilityLabel="Search" onPress={() => router.push('/search')}>
+              <Search size={20} color={colors.text.primary} strokeWidth={1.5} />
             </IconButton>
-            <IconButton badgeCount={wishlistCount} onPress={() => router.push('/(tabs)/wishlist')}>
-              <Heart size={IconSize.sm} color={colors.text.primary} strokeWidth={1.75} />
-            </IconButton>
-            <IconButton badgeCount={cartCount} onPress={() => router.push('/(tabs)/cart')}>
-              <ShoppingBag size={IconSize.sm} color={colors.text.primary} strokeWidth={1.75} />
+            <IconButton accessibilityLabel="Shopping bag" badgeCount={cartCount} onPress={() => router.push('/(tabs)/cart')}>
+              <ShoppingBag size={20} color={colors.text.primary} strokeWidth={1.5} />
             </IconButton>
           </View>
         </View>
@@ -55,16 +50,15 @@ export function FloatingHeader({ scrollY }: { scrollY: SharedValue<number> }) {
 
 const styles = StyleSheet.create({
   host: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
-  bar: { width: '100%' },
   inner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Layout.screenPadding,
-    paddingBottom: Spacing.sm,
+    paddingLeft: Layout.screenPadding,
+    paddingRight: Layout.screenPadding - Spacing.sm,
+    paddingBottom: Spacing.xs,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  wordmark: { letterSpacing: 2 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  wordmark: { letterSpacing: 4, fontSize: 16, lineHeight: 20 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
 });

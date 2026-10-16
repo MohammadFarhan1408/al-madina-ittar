@@ -1,8 +1,9 @@
 /**
- * CollectionsRail — horizontally scrolling editorial collection cards.
+ * CollectionsRail — portrait editorial collection cards that snap one at a time, with
+ * the next card peeking to invite the swipe. Hidden on error/empty.
  */
 import { FlashList } from '@shopify/flash-list';
-import { View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { CollectionCard } from '@/components/commerce';
 import { SectionHeader } from '@/components/layout';
@@ -11,21 +12,26 @@ import { Layout, Radius, Spacing } from '@/constants';
 import { useCollections } from '@/hooks/queries';
 import type { Collection } from '@/types';
 
-const CARD_WIDTH = 280;
+const GAP = Spacing.md;
 
 export function CollectionsRail({ onSelect }: { onSelect?: (c: Collection) => void }) {
-  const { data, isLoading } = useCollections();
+  const { data, isLoading, isError } = useCollections();
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min(Math.round(width * 0.74), 340);
+  const cardHeight = Math.round(cardWidth * 1.28);
+
+  if (!isLoading && (isError || !data?.length)) return null;
 
   return (
-    <View style={{ gap: Spacing.lg }}>
-      <View style={{ paddingHorizontal: Layout.screenPadding }}>
-        <SectionHeader eyebrow="Curated" title="Featured Collections" />
+    <View style={styles.root}>
+      <View style={styles.pad}>
+        <SectionHeader eyebrow="Curated" title="The Collections" />
       </View>
 
       {isLoading ? (
-        <View style={{ flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Layout.screenPadding }}>
-          <Skeleton width={CARD_WIDTH} height={200} radius={Radius.lg} />
-          <Skeleton width={120} height={200} radius={Radius.lg} />
+        <View style={[styles.row, styles.pad]}>
+          <Skeleton width={cardWidth} height={cardHeight} radius={Radius.sm} />
+          <Skeleton width={60} height={cardHeight} radius={Radius.sm} />
         </View>
       ) : (
         <FlashList
@@ -33,11 +39,23 @@ export function CollectionsRail({ onSelect }: { onSelect?: (c: Collection) => vo
           data={data}
           keyExtractor={(item) => item.id}
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: Layout.screenPadding }}
-          ItemSeparatorComponent={() => <View style={{ width: Spacing.lg }} />}
-          renderItem={({ item }) => <CollectionCard collection={item} width={CARD_WIDTH} onPress={onSelect} />}
+          decelerationRate="fast"
+          snapToInterval={cardWidth + GAP}
+          snapToAlignment="start"
+          contentContainerStyle={styles.pad}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
+          renderItem={({ item }) => (
+            <CollectionCard collection={item} width={cardWidth} height={cardHeight} onPress={onSelect} />
+          )}
         />
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { gap: Spacing.xl },
+  pad: { paddingHorizontal: Layout.screenPadding },
+  row: { flexDirection: 'row', gap: GAP, overflow: 'hidden' },
+  sep: { width: GAP },
+});
