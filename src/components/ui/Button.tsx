@@ -122,6 +122,8 @@ export function Button({
           borderColor: p.border,
           borderRadius: radius,
           opacity: isDisabled && !loading ? 0.4 : 1,
+          // Note: inside a ROW, pass `style={{ alignSelf: 'center' }}` (or use `flex`) —
+          // 'stretch' is a cross-axis rule and would pin the button to the row's top.
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
           paddingHorizontal: variant === 'ghost' ? Spacing.md : size === 'sm' ? Spacing.lg : Spacing.xxl,
         },
