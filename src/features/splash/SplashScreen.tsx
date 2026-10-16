@@ -1,69 +1,70 @@
 /**
- * Branded animated splash: the logo mark scales/fades in over a noir backdrop with a
- * gold shimmer sweep and the wordmark, then signals completion via `onDone`.
+ * Branded animated splash — quiet and quick, like the first frame of a film:
+ * noir ground, the wordmark in the house face rising into place, a fine gold rule
+ * drawing outward beneath it, then the maison line. Signals completion via `onDone`
+ * (same contract as before; total ≈ 1.7s). Honours the global reduced-motion setting.
  */
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 
-import { ArtDecoDivider, GradientBackdrop, LogoMark } from '@/components/brand';
 import { Text } from '@/components/ui';
 import { Spacing } from '@/constants';
 import { Palette } from '@/constants/colors';
 
+const EASE = Easing.bezier(0.2, 0, 0, 1);
+
 export function SplashScreen({ onDone }: { onDone: () => void }) {
-  const scale = useSharedValue(0.6);
-  const opacity = useSharedValue(0);
+  const mark = useSharedValue(0);
+  const rule = useSharedValue(0);
+  const tagline = useSharedValue(0);
+  const hold = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 600, easing: Easing.out(Easing.cubic) });
-    scale.value = withSequence(
-      withTiming(1.05, { duration: 700, easing: Easing.out(Easing.cubic) }),
-      withTiming(1, { duration: 300 }),
-    );
-    // Hold, then signal completion.
-    opacity.value = withDelay(
+    mark.value = withTiming(1, { duration: 900, easing: EASE });
+    rule.value = withDelay(450, withTiming(1, { duration: 800, easing: EASE }));
+    tagline.value = withDelay(800, withTiming(1, { duration: 700, easing: EASE }));
+    hold.value = withDelay(
       1700,
       withTiming(1, { duration: 1 }, (finished) => {
         if (finished) runOnJS(onDone)();
       }),
     );
-  }, [onDone, opacity, scale]);
+  }, [onDone, mark, rule, tagline, hold]);
 
   const markStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }],
+    opacity: mark.value,
+    transform: [{ translateY: (1 - mark.value) * 14 }],
+  }));
+  const ruleStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: rule.value }], opacity: rule.value }));
+  const taglineStyle = useAnimatedStyle(() => ({
+    opacity: tagline.value,
+    transform: [{ translateY: (1 - tagline.value) * 6 }],
   }));
 
   return (
-    <View style={styles.root}>
-      <GradientBackdrop variant="hero" pattern patternOpacity={0.08} />
-      <View style={styles.center}>
-        <Animated.View style={markStyle}>
-          <LogoMark size={96} color={Palette.champagne} />
-        </Animated.View>
-        <Animated.View entering={FadeIn.delay(500).duration(800)} style={styles.wordmark}>
-          <Text variant="display" colorValue={Palette.ivory} align="center" style={styles.title}>
-            AL MADINA
-          </Text>
-          <ArtDecoDivider color={Palette.champagne} width={160} />
-          <Text variant="overline" colorValue={Palette.champagne} align="center">
-            MAISON DE PARFUM
-          </Text>
-        </Animated.View>
-      </View>
-      <Animated.View entering={FadeIn.delay(900).duration(800)} style={styles.footer}>
-        <Text variant="caption" colorValue={Palette.stone} align="center">
-          The Art of Arabian Perfumery
+    <View style={styles.root} accessible accessibilityLabel="Al Madina Ittar">
+      <Animated.View style={markStyle}>
+        <Text variant="display" colorValue={Palette.ivoryText} align="center" style={styles.title}>
+          AL MADINA
+        </Text>
+      </Animated.View>
+      <Animated.View style={[styles.rule, ruleStyle]} />
+      <Animated.View style={taglineStyle}>
+        <Text variant="overline" colorValue={Palette.champagne} align="center" style={styles.tagline}>
+          ITTAR · MAISON DE PARFUM
+        </Text>
+      </Animated.View>
+      <Animated.View style={[styles.footer, taglineStyle]}>
+        <Text variant="overline" colorValue={Palette.ash} align="center">
+          THE ART OF ARABIAN PERFUMERY
         </Text>
       </Animated.View>
     </View>
@@ -71,9 +72,15 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  center: { alignItems: 'center', gap: Spacing.xxl },
-  wordmark: { alignItems: 'center', gap: Spacing.md },
-  title: { letterSpacing: 6 },
+  root: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Palette.richBlack,
+    gap: Spacing.lg,
+  },
+  title: { letterSpacing: 8, fontSize: 34, lineHeight: 40 },
+  rule: { width: 56, height: 1, backgroundColor: Palette.antiqueGold },
+  tagline: { letterSpacing: 3.2 },
   footer: { position: 'absolute', bottom: Spacing.giant },
 });
