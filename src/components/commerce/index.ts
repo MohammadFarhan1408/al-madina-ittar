@@ -9,3 +9,4 @@ export { ProductCard } from './ProductCard';
 export { ProductCardSkeleton } from './ProductCardSkeleton';
 export { CategoryCard } from './CategoryCard';
 export { CategoryTile } from './CategoryTile';
+export { OrderStatusPill } from './OrderStatusPill';
