@@ -1,22 +1,18 @@
 /**
  * ResetPasswordScreen — takes the link/token from the reset email plus a new password.
  */
-import { Lock, KeyRound } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
-import { Button, FormField, Text } from '@/components/ui';
-import { IconSize, Spacing } from '@/constants';
-import { useTheme } from '@/core/theme';
+import { Button, FormField } from '@/components/ui';
 import { authService } from '@/services';
 import { toast } from '@/store';
 import { getErrorMessage, haptics, zodResolver } from '@/utils';
 import { resetPasswordSchema, type ResetPasswordValues } from '../schemas';
-import { AuthLayout } from '../components/AuthLayout';
+import { AuthLayout, AuthLink } from '../components/AuthLayout';
+import { PasswordField } from '../components/PasswordField';
 
 export function ResetPasswordScreen() {
-  const { colors } = useTheme();
   const router = useRouter();
   const { token } = useLocalSearchParams<{ token?: string }>();
   const { control, handleSubmit, formState } = useForm<ResetPasswordValues>({
@@ -34,43 +30,35 @@ export function ResetPasswordScreen() {
       toast.error(getErrorMessage(err, 'Reset failed. Please request a new link.'));
     }
   };
+  const submit = handleSubmit(onSubmit);
 
   return (
-    <AuthLayout title="New Password" subtitle="Paste the reset code from your email and choose a new password.">
+    <AuthLayout
+      eyebrow="Account recovery"
+      title="Choose a new password"
+      subtitle="Paste the reset code from your email, then set your new password."
+      footer={<AuthLink label="Back to sign in" onPress={() => router.replace('/(auth)/login')} />}
+    >
       <FormField
         control={control}
         name="token"
         label="Reset Code"
         placeholder="Code from your email"
         autoCapitalize="none"
-        leftIcon={<KeyRound size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
+        autoCorrect={false}
+        autoComplete="one-time-code"
+        textContentType="oneTimeCode"
+        returnKeyType="next"
       />
-      <FormField
+      <PasswordField
         control={control}
         name="password"
         label="New Password"
-        placeholder="••••••••"
-        secureTextEntry
-        leftIcon={<Lock size={IconSize.sm} color={colors.text.muted} strokeWidth={1.75} />}
+        isNew
+        hint="8+ characters, including a letter and a number."
+        onSubmitEditing={submit}
       />
-
-      <Button
-        label="Update Password"
-        variant="gradient"
-        glow
-        loading={formState.isSubmitting}
-        onPress={handleSubmit(onSubmit)}
-      />
-
-      <View style={styles.footer}>
-        <Text variant="bodyStrong" color="accent" onPress={() => router.replace('/(auth)/login')}>
-          Back to sign in
-        </Text>
-      </View>
+      <Button label="Update Password" loading={formState.isSubmitting} onPress={submit} />
     </AuthLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Spacing.sm },
-});

@@ -46,7 +46,10 @@ export function CartScreen() {
   if (items.length === 0) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background }]}>
-        <Header count={0} top={insets.top} />
+        {/* Outside the padded scroll content here, so pad the header itself. */}
+        <View style={styles.emptyHeader}>
+          <Header count={0} top={insets.top} />
+        </View>
         <EmptyState
           icon={<ShoppingBag size={IconSize.lg} color={colors.text.secondary} strokeWidth={1.25} />}
           title="Your bag is empty"
@@ -186,6 +189,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingHorizontal: Layout.screenPadding, alignSelf: 'center', width: '100%' },
   header: { gap: Spacing.xs, paddingBottom: Spacing.xl },
+  emptyHeader: { paddingHorizontal: Layout.screenPadding },
   progress: { gap: Spacing.sm, paddingBottom: Spacing.md },
   track: { height: 2, borderRadius: 1, overflow: 'hidden' },
   fill: { height: 2, width: '100%', transformOrigin: 'left' },
