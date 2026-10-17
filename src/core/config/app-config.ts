@@ -7,14 +7,14 @@ import Constants from 'expo-constants';
 
 type DataSource = 'mock' | 'remote';
 
-const env = process.env;
-
+// Must read `process.env.EXPO_PUBLIC_*` directly — Expo only inlines that exact
+// form at build time; aliasing `process.env` leaves release builds on the defaults.
 export const AppConfig = {
   name: 'Al Madina',
   tagline: 'The Art of Arabian Perfumery',
   defaultCurrency: 'AED',
-  dataSource: (env.EXPO_PUBLIC_DATA_SOURCE as DataSource) ?? 'mock',
-  apiBaseUrl: env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.almadina.example/v1',
+  dataSource: (process.env.EXPO_PUBLIC_DATA_SOURCE as DataSource) ?? 'mock',
+  apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.almadina.example/v1',
   apiTimeoutMs: 15000,
   version: Constants.expoConfig?.version ?? '1.0.0',
   freeShippingThreshold: 250,
