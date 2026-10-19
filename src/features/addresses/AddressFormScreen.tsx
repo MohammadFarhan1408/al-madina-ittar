@@ -6,7 +6,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StackHeader } from '@/components/layout';
@@ -75,7 +75,7 @@ export function AddressFormScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StackHeader overline="Account" title={isNew ? 'New Address' : 'Edit Address'} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+      <KeyboardAvoidingView behavior="padding" style={styles.root}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.giant }]}
           keyboardShouldPersistTaps="handled"

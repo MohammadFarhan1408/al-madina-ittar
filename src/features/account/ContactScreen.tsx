@@ -6,7 +6,7 @@
  */
 import { ArrowUpRight, Clock, Mail, MapPin, Phone } from 'lucide-react-native';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StackHeader } from '@/components/layout';
@@ -49,7 +49,7 @@ export function ContactScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <StackHeader overline="Concierge" title="Contact" />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + Spacing.giant }]}

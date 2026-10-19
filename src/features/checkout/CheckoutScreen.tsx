@@ -26,7 +26,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -40,7 +40,7 @@ import { addressesService } from '@/services';
 import { openStripeCheckoutForOrder, paymentReturnUrl } from '@/services/payments/checkout-browser';
 import { toast, useCartStore, useCartSummary, useSessionStore } from '@/store';
 import { QueryKeys, useAddresses, useAppliedCoupon, usePlaceOrder } from '@/hooks/queries';
-import { formatPrice, formatVolume, haptics, unitPrice, uuid, zodResolver } from '@/utils';
+import { formatPrice, formatVolume, getErrorMessage, haptics, unitPrice, uuid, zodResolver } from '@/utils';
 import type { Order } from '@/types';
 import { foldAddress, makeAddressSchema, type AddressValues } from './schema';
 import { CouponField } from '../cart/components/CouponField';
@@ -161,7 +161,7 @@ export function CheckoutScreen() {
               });
           }
         },
-        onError: () => toast.error('We could not place your order. Please try again.'),
+        onError: (e) => toast.error(getErrorMessage(e, 'We could not place your order. Please try again.')),
       },
     );
   };
@@ -212,7 +212,7 @@ export function CheckoutScreen() {
         <Stepper steps={STEPS} activeIndex={step} />
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: 140 + insets.bottom }]}
           keyboardShouldPersistTaps="handled"
