@@ -1,0 +1,63 @@
+# On every merge to main: build a release APK and replace the asset on the GitHub
+# release for the current app.json version (v<version>). Bump `expo.version` in
+# app.json yourself to start a new release; otherwise the existing one is overwritten.
+name: Android APK release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-release
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Inlined into the JS bundle at build time — set the URL under
+      # Settings → Secrets and variables → Actions → Variables.
+      EXPO_PUBLIC_DATA_SOURCE: remote
+      EXPO_PUBLIC_API_BASE_URL: ${{ vars.EXPO_PUBLIC_API_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require API URL
+        run: |
+          if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then
+            echo "::error::Set the EXPO_PUBLIC_API_BASE_URL repository variable"; exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - run: npm ci
+
+      # android/ is generated (gitignored). Its release build is signed with the
+      # template's debug.keystore — the same key as earlier APKs, so installs update in place.
+      # ponytail: public debug key, fine for sideloaded APKs; swap in a real keystore secret before the Play Store.
+      - run: npx expo prebuild --platform android --clean --no-install
+
+      - run: ./gradlew assembleRelease --no-daemon
+        working-directory: android
+
+      - name: Publish to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v$(node -p "require('./app.json').expo.version")"
+          cp android/app/build/outputs/apk/release/app-release.apk al-madina-ittar.apk
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --notes "Android APK $TAG"
+          gh release upload "$TAG" al-madina-ittar.apk --clobber
